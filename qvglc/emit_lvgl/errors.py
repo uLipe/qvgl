@@ -1,0 +1,2 @@
+class EmitError(Exception):
+    pass

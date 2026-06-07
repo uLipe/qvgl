@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "profile": "ultralite_v1",
+  "module": "turbo_gauge",
+  "root": 0,
+  "module_properties": [
+    { "name": "pressure", "type": "f32", "default": -0.7 }
+  ],
+  "nodes": [
+    {
+      "kind": "Item",
+      "id": "root",
+      "children": [1, 2, 3, 4, 5],
+      "properties": {
+        "width": 400,
+        "height": 400
+      }
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "color": "#ff1a1a2e",
+        "radius": 16,
+        "anchors": { "fill": "parent" }
+      },
+      "flags": ["static_layout"]
+    },
+    {
+      "kind": "Arc",
+      "id": "gaugeArc",
+      "children": [],
+      "properties": {
+        "width": 320,
+        "height": 320,
+        "from": 210,
+        "to": -30,
+        "minValue": -0.7,
+        "maxValue": 2.0,
+        "value": { "binding": { "sym": "pressure" } },
+        "lineWidth": 24,
+        "color": "#ff00d4aa",
+        "anchors": { "centerIn": "parent" }
+      },
+      "flags": ["needs_observer"]
+    },
+    {
+      "kind": "Text",
+      "id": "valueLabel",
+      "children": [],
+      "properties": {
+        "text": {
+          "binding": {
+            "op": "format",
+            "args": [
+              { "const": "%.1f bar" },
+              { "sym": "pressure" }
+            ]
+          }
+        },
+        "color": "#ffffffff",
+        "font.pixelSize": 36,
+        "anchors": { "centerIn": "parent" }
+      },
+      "flags": ["needs_observer"]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "TURBO",
+        "color": "#ff888888",
+        "font.pixelSize": 14,
+        "anchors": {
+          "bottom": "valueLabel.top",
+          "horizontalCenter": "parent.horizontalCenter",
+          "bottomMargin": 8
+        }
+      },
+      "flags": ["static_layout"]
+    },
+    {
+      "kind": "MouseArea",
+      "id": "clickArea",
+      "children": [],
+      "properties": {
+        "anchors": { "fill": "parent" }
+      },
+      "flags": ["static_layout"]
+    }
+  ],
+  "bindings": [
+    {
+      "target": "gaugeArc",
+      "key": "value",
+      "expr": { "sym": "pressure" }
+    },
+    {
+      "target": "valueLabel",
+      "key": "text",
+      "expr": {
+        "op": "format",
+        "args": [
+          { "const": "%.1f bar" },
+          { "sym": "pressure" }
+        ]
+      }
+    }
+  ],
+  "handlers": [
+    {
+      "node": "clickArea",
+      "signal": "clicked",
+      "handler": "app_on_gauge_clicked"
+    }
+  ]
+}

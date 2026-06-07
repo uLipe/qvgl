@@ -1,0 +1,59 @@
+# Upstream Qt examples — paths relative to QTMCU or QT_EXAMPLES (see root key).
+# Run: tools/sync_upstream_examples.sh
+version: 1
+
+defaults:
+  qt_examples: "${QT_EXAMPLES:-$HOME/Qt/Examples/Qt-6.11.1}"
+  qtmcu: "${QTMCU:-$HOME/Qt/QtMCUs/2.12.1}"
+
+entries:
+  - id: mcu_minimal
+    root: qtmcu
+    path: examples/minimal/minimal.qml
+    fixture: examples/mcu_minimal/minimal.qml
+    fixture_sha256: fadbdf24196c0faff7f41ddf5d4f016c6cb1bf7887c7bf9c54a374014c7620d6
+    tier: pass
+    profile: ultralite_v1
+    note: "Qt for MCUs — static Rectangle + Text (Creator: minimal)"
+
+  - id: mcu_studio_gauge
+    root: qtmcu
+    path: examples/studio_components/Gauge.qml
+    tier: reference
+    profile: ultralite_v1
+    note: "Official ArcItem dual-arc gauge — not compilable as-is (ArcItem, gradient)"
+
+  - id: mcu_listmodel
+    root: qtmcu
+    path: examples/listmodel/listmodel.qml
+    tier: reject
+    expect_code: unknown_type
+    note: "ListModel — must reject"
+
+  - id: mcu_layers
+    root: qtmcu
+    path: examples/layers/layers.qml
+    tier: reject
+    expect_code: unsupported_feature
+    note: "Item layers — out of profile v1"
+
+  - id: mcu_timeline
+    root: qtmcu
+    path: examples/timeline/timeline.qml
+    tier: reject
+    expect_code: unsupported_feature
+    note: "Timeline / animation"
+
+  - id: qt_quick_shapes
+    root: qt_examples
+    path: quick/quickshapes/shapes/main.qml
+    tier: reject
+    expect_code: unknown_type
+    note: "Qt Quick Shapes — desktop module"
+
+  - id: qt_quick_graph
+    root: qt_examples
+    path: quick/scenegraph/graph/main.qml
+    tier: reject
+    expect_code: unsupported_feature
+    note: "Scene graph C++ nodes — desktop only"

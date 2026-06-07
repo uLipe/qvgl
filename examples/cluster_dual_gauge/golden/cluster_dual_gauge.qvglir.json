@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "profile": "cluster_480x272",
+  "module": "cluster_dual_gauge",
+  "root": 0,
+  "nodes": [
+    {
+      "kind": "Item",
+      "children": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "properties": {
+        "width": 480,
+        "height": 272
+      },
+      "id": "root"
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "height": 40,
+        "color": "#ff1a1a2e",
+        "anchors": {
+          "left": "parent.left",
+          "right": "parent.right",
+          "top": "parent.top"
+        }
+      },
+      "id": "header",
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "DUAL GAUGE",
+        "color": "#ffffffff",
+        "font.pixelSize": 18,
+        "anchors": {
+          "centerIn": "header"
+        }
+      },
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Arc",
+      "children": [],
+      "properties": {
+        "width": 120,
+        "height": 120,
+        "from": 210,
+        "to": -30,
+        "minValue": 0,
+        "maxValue": 260,
+        "value": {
+          "binding": {
+            "sym": "speed_kmh"
+          }
+        },
+        "lineWidth": 12,
+        "color": "#ff00d4aa",
+        "anchors": {
+          "left": "parent.left",
+          "top": "header.bottom",
+          "leftMargin": 24,
+          "topMargin": 16
+        }
+      },
+      "id": "speedArc",
+      "flags": [
+        "needs_observer"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": {
+          "binding": {
+            "op": "format",
+            "args": [
+              {
+                "const": "%.0f"
+              },
+              {
+                "sym": "speed_kmh"
+              }
+            ]
+          }
+        },
+        "color": "#ffffffff",
+        "font.pixelSize": 24,
+        "anchors": {
+          "centerIn": "speedArc"
+        }
+      },
+      "id": "speedLabel",
+      "flags": [
+        "needs_observer"
+      ]
+    },
+    {
+      "kind": "Arc",
+      "children": [],
+      "properties": {
+        "width": 120,
+        "height": 120,
+        "from": 210,
+        "to": -30,
+        "minValue": 0,
+        "maxValue": 8000,
+        "value": {
+          "binding": {
+            "sym": "rpm"
+          }
+        },
+        "lineWidth": 12,
+        "color": "#ffff6b6b",
+        "anchors": {
+          "right": "parent.right",
+          "top": "header.bottom",
+          "rightMargin": 24,
+          "topMargin": 16
+        }
+      },
+      "id": "rpmArc",
+      "flags": [
+        "needs_observer"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": {
+          "binding": {
+            "op": "format",
+            "args": [
+              {
+                "const": "%.0f"
+              },
+              {
+                "sym": "rpm"
+              }
+            ]
+          }
+        },
+        "color": "#ffffffff",
+        "font.pixelSize": 24,
+        "anchors": {
+          "centerIn": "rpmArc"
+        }
+      },
+      "id": "rpmLabel",
+      "flags": [
+        "needs_observer"
+      ]
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "height": 32,
+        "color": "#ff111122",
+        "anchors": {
+          "left": "parent.left",
+          "right": "parent.right",
+          "bottom": "parent.bottom"
+        }
+      },
+      "id": "footer",
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "km/h \u2014 rpm",
+        "color": "#ff888888",
+        "font.pixelSize": 14,
+        "anchors": {
+          "centerIn": "footer"
+        }
+      },
+      "flags": [
+        "static_layout"
+      ]
+    }
+  ],
+  "module_properties": [
+    {
+      "name": "speed_kmh",
+      "type": "f32",
+      "default": 0
+    },
+    {
+      "name": "rpm",
+      "type": "f32",
+      "default": 0
+    }
+  ],
+  "bindings": [
+    {
+      "target": "speedArc",
+      "key": "value",
+      "expr": {
+        "sym": "speed_kmh"
+      }
+    },
+    {
+      "target": "speedLabel",
+      "key": "text",
+      "expr": {
+        "op": "format",
+        "args": [
+          {
+            "const": "%.0f"
+          },
+          {
+            "sym": "speed_kmh"
+          }
+        ]
+      }
+    },
+    {
+      "target": "rpmArc",
+      "key": "value",
+      "expr": {
+        "sym": "rpm"
+      }
+    },
+    {
+      "target": "rpmLabel",
+      "key": "text",
+      "expr": {
+        "op": "format",
+        "args": [
+          {
+            "const": "%.0f"
+          },
+          {
+            "sym": "rpm"
+          }
+        ]
+      }
+    }
+  ]
+}

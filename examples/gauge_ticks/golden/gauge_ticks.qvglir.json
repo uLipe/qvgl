@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "profile": "ultralite_v1",
+  "module": "gauge_ticks",
+  "root": 0,
+  "nodes": [
+    {
+      "kind": "Item",
+      "children": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "properties": {
+        "width": 400,
+        "height": 400
+      },
+      "id": "root"
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "color": "#ff1a1a2e",
+        "radius": 16,
+        "anchors": {
+          "fill": "parent"
+        }
+      },
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Arc",
+      "children": [],
+      "properties": {
+        "width": 320,
+        "height": 320,
+        "from": 210,
+        "to": -30,
+        "minValue": -0.7,
+        "maxValue": 2.0,
+        "value": {
+          "binding": {
+            "sym": "pressure"
+          }
+        },
+        "lineWidth": 24,
+        "color": "#ff00d4aa",
+        "tickCount": 28,
+        "majorTickEvery": 4,
+        "showTickLabels": {
+          "binding": {
+            "sym": "true"
+          }
+        },
+        "anchors": {
+          "centerIn": "parent"
+        }
+      },
+      "id": "gaugeArc",
+      "flags": [
+        "needs_observer"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": {
+          "binding": {
+            "op": "format",
+            "args": [
+              {
+                "const": "%.1f bar"
+              },
+              {
+                "sym": "pressure"
+              }
+            ]
+          }
+        },
+        "color": "#ffffffff",
+        "font.pixelSize": 36,
+        "anchors": {
+          "centerIn": "parent"
+        }
+      },
+      "id": "valueLabel",
+      "flags": [
+        "needs_observer"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "TURBO",
+        "color": "#ff888888",
+        "font.pixelSize": 14,
+        "anchors": {
+          "bottom": "valueLabel.top",
+          "horizontalCenter": "parent.horizontalCenter",
+          "bottomMargin": 8
+        }
+      },
+      "flags": [
+        "static_layout"
+      ]
+    }
+  ],
+  "module_properties": [
+    {
+      "name": "pressure",
+      "type": "f32",
+      "default": 0.5
+    }
+  ],
+  "bindings": [
+    {
+      "target": "gaugeArc",
+      "key": "value",
+      "expr": {
+        "sym": "pressure"
+      }
+    },
+    {
+      "target": "gaugeArc",
+      "key": "showTickLabels",
+      "expr": {
+        "sym": "true"
+      }
+    },
+    {
+      "target": "valueLabel",
+      "key": "text",
+      "expr": {
+        "op": "format",
+        "args": [
+          {
+            "const": "%.1f bar"
+          },
+          {
+            "sym": "pressure"
+          }
+        ]
+      }
+    }
+  ]
+}

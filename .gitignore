@@ -1,0 +1,16 @@
+examples/upstream/synced/
+
+build/
+tmp/
+.cache/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+dist/
+
+# Compiler / preview output (regenerate with qvglc compile)
+**/golden/generated/
+
+*.qvglir
+!examples/**/golden/*.qvglir
+!examples/**/golden/*.qvglir.json

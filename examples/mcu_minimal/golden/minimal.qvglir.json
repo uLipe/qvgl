@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "profile": "ultralite_v1",
+  "module": "minimal",
+  "root": 0,
+  "nodes": [
+    {
+      "kind": "Rectangle",
+      "children": [1],
+      "properties": {
+        "width": 400,
+        "height": 400,
+        "color": "#ff41cd52"
+      }
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "Qt for MCUs",
+        "font.pixelSize": 30,
+        "anchors": { "centerIn": "parent" }
+      },
+      "flags": ["static_layout"]
+    }
+  ]
+}

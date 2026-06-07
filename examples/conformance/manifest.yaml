@@ -1,0 +1,75 @@
+# Machine-checkable conformance tiers — see docs/11-qml-conformance-matrix.md
+# tier: pass | partial | reject
+# pass: qvglc check must succeed
+# partial: check passes; visual/emit gaps documented in matrix
+# reject: check must fail with expect_code
+
+cases:
+  - id: mcu_minimal
+    qml: examples/mcu_minimal/minimal.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: turbo_gauge
+    qml: examples/turbo_gauge/turbo_gauge.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: gauge_ticks
+    qml: examples/gauge_ticks/gauge_ticks.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: static_card
+    qml: examples/static_card/static_card.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: cluster_shell
+    qml: examples/cluster_shell/cluster_shell.qml
+    profile: profiles/cluster_480x272.yaml
+    tier: pass
+
+  - id: cluster_dual_gauge
+    qml: examples/cluster_dual_gauge/cluster_dual_gauge.qml
+    profile: profiles/cluster_480x272.yaml
+    tier: pass
+
+  - id: icon_row
+    qml: examples/icon_row/icon_row.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: themed_chip
+    qml: examples/themed_chip/themed_chip.qml
+    profile: profiles/cluster_480x272.yaml
+    tier: pass
+
+  - id: instrument_cluster_static
+    qml: examples/instrument_cluster_static/instrument_cluster_static.qml
+    profile: profiles/cluster_480x272.yaml
+    tier: pass
+
+  - id: reject_unknown_import
+    qml: tests/fixtures/qml/reject/unknown_import.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: reject
+    expect_code: unknown_import
+
+  - id: reject_unknown_type
+    qml: tests/fixtures/qml/reject/unknown_type.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: reject
+    expect_code: unknown_type
+
+  - id: reject_number_animation
+    qml: tests/fixtures/qml/reject/number_animation.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: reject
+    expect_code: unknown_type
+
+  - id: reject_states
+    qml: tests/fixtures/qml/reject/states.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: reject
+    expect_code: unsupported_feature

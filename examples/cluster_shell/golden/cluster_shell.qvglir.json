@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "profile": "cluster_480x272",
+  "module": "cluster_shell",
+  "root": 0,
+  "nodes": [
+    {
+      "kind": "Item",
+      "children": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "properties": {
+        "width": 480,
+        "height": 272
+      },
+      "id": "root"
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "height": 40,
+        "color": "#ff1a1a2e",
+        "anchors": {
+          "left": "parent.left",
+          "right": "parent.right",
+          "top": "parent.top"
+        }
+      },
+      "id": "header",
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "CLUSTER",
+        "color": "#ffffffff",
+        "font.pixelSize": 18,
+        "anchors": {
+          "centerIn": "header"
+        }
+      },
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "width": 120,
+        "height": 120,
+        "color": "#ff2d2d30",
+        "radius": 8,
+        "anchors": {
+          "left": "parent.left",
+          "top": "header.bottom",
+          "leftMargin": 24,
+          "topMargin": 16
+        }
+      },
+      "id": "gauge_left",
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "width": 120,
+        "height": 120,
+        "color": "#ff2d2d30",
+        "radius": 8,
+        "anchors": {
+          "right": "parent.right",
+          "top": "header.bottom",
+          "rightMargin": 24,
+          "topMargin": 16
+        }
+      },
+      "id": "gauge_right",
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Rectangle",
+      "children": [],
+      "properties": {
+        "height": 32,
+        "color": "#ff111122",
+        "anchors": {
+          "left": "parent.left",
+          "right": "parent.right",
+          "bottom": "parent.bottom"
+        }
+      },
+      "id": "footer",
+      "flags": [
+        "static_layout"
+      ]
+    },
+    {
+      "kind": "Text",
+      "children": [],
+      "properties": {
+        "text": "PRND \u2014 static",
+        "color": "#ff888888",
+        "font.pixelSize": 14,
+        "anchors": {
+          "centerIn": "footer"
+        }
+      },
+      "flags": [
+        "static_layout"
+      ]
+    }
+  ]
+}

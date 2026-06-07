@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qvglc"
+version = "0.1.0"
+description = "QVGL — static QML to LVGL compiler (host toolchain)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyYAML>=6",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "Pillow>=9"]
+qt-parity = ["pytest>=7", "Pillow>=9", "PyQt6>=6.4"]
+
+[project.scripts]
+qvglc = "qvglc.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["qvglc*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

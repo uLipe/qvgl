@@ -1,0 +1,19 @@
+# Expected sema/parser rejection — proof QVGL refuses unsupported QML early.
+# code must match qvglc.parser.errors.DiagnosticCode value
+cases:
+  - file: unknown_import.qml
+    code: unknown_import
+  - file: unknown_type.qml
+    code: unknown_type
+  - file: unknown_property.qml
+    code: unknown_property
+  - file: listview.qml
+    code: unknown_type
+  - file: number_animation.qml
+    code: unknown_type
+  - file: js_math_call.qml
+    code: unsupported_expr
+  - file: states.qml
+    code: unsupported_feature
+  - file: connections.qml
+    code: unsupported_feature

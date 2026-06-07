@@ -1,0 +1,38 @@
+# Qt Quick (PyQt) vs QVGL/SDL render parity cases
+# Only examples renderable by stock QtQuick 2.15 (no Arc, no Theme.* compile tokens).
+# See docs/07-proof-of-correctness.md
+
+cases:
+  - id: mcu_minimal
+    qml: examples/mcu_minimal/minimal.qml
+    profile: profiles/ultralite_v1.yaml
+    per_channel_tolerance: 12
+    max_diff_ratio: 0.03
+
+  - id: static_card
+    qml: examples/static_card/static_card.qml
+    profile: profiles/ultralite_v1.yaml
+    per_channel_tolerance: 12
+    max_diff_ratio: 0.04
+
+  - id: cluster_shell
+    qml: examples/cluster_shell/cluster_shell.qml
+    profile: profiles/cluster_480x272.yaml
+    per_channel_tolerance: 16
+    max_diff_ratio: 0.02
+
+  - id: instrument_cluster_static
+    qml: examples/instrument_cluster_static/instrument_cluster_static.qml
+    profile: profiles/cluster_480x272.yaml
+    per_channel_tolerance: 16
+    max_diff_ratio: 0.05
+
+  - id: icon_row
+    qml: examples/icon_row/icon_row.qml
+    profile: profiles/ultralite_v1.yaml
+    per_channel_tolerance: 16
+    max_diff_ratio: 0.06
+
+# Deferred (not stock QtQuick):
+# - turbo_gauge, cluster_dual_gauge — Arc is Ultralite/QVGL emit, not in Qt Quick
+# - themed_chip — Theme.* resolved at QVGL compile time

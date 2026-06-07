@@ -1,0 +1,7 @@
+# Maps qvgl_vehicle_state_t fields → module property setters.
+module: cluster_dual_gauge
+mappings:
+  - vehicle: speed_kmh
+    property: speed_kmh
+  - vehicle: rpm
+    property: rpm

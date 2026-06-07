@@ -1,0 +1,64 @@
+# Cluster display profile — 480×272 automotive frame
+name: cluster_480x272
+version: 1
+
+imports:
+  allowed:
+    - "QtQuick 2.0"
+    - "QtQuick 2.15"
+
+types:
+  Item:
+    properties: [x, y, width, height, visible, opacity, enabled]
+  Rectangle:
+    extends: Item
+    properties: [color, radius, border.width, border.color]
+  Text:
+    extends: Item
+    properties: [text, color, font.pixelSize, horizontalAlignment]
+  Arc:
+    extends: Item
+    properties: [from, to, value, minValue, maxValue, color, lineWidth, rotation, tickCount, majorTickEvery, showTickLabels]
+  Meter:
+    extends: Item
+    properties: [value, minValue, maxValue, start_angle, end_angle]
+  MouseArea:
+    extends: Item
+    signals: [clicked, pressed, released]
+  Image:
+    extends: Item
+    properties: [source, fillMode]
+
+anchors:
+  allowed: [fill, centerIn, top, bottom, left, right, horizontalCenter, verticalCenter, margins]
+
+bindings:
+  allowed_exprs: [sym, const, add, sub, mul, ternary, map_linear, format]
+  disallow: [js_function, arbitrary_call]
+
+animations:
+  allowed: []
+
+display:
+  width: 480
+  height: 272
+
+fonts:
+  tiers:
+    - max_pixel_size: 14
+      lv_id: montserrat_14
+    - max_pixel_size: 36
+      lv_id: montserrat_36
+    - max_pixel_size: 9999
+      lv_id: montserrat_48
+
+theme:
+  colors:
+    cluster_bg: "#00414a"
+    cluster_accent: "#2cde85"
+    cluster_accent_dim: "#28c878"
+
+coverage:
+  fail_on_unknown_type: true
+  fail_on_unknown_property: true
+  warn_on_unsupported: true
