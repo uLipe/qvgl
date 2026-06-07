@@ -19,7 +19,7 @@ from qvglc.ir import (
 )
 from qvglc.lvgl_probe import probe_lvgl
 from qvglc.run_preview import run_qml_preview
-from qvglc.vehicle import emit_vehicle_apply, load_bindings
+from qvglc.vehicle import emit_vehicle_apply, load_bindings, maybe_emit_vehicle_bind, prop_sets_from_can_args
 from qvglc.vehicle.emit_apply import VehicleBindError
 
 
@@ -67,6 +67,13 @@ def main(argv: list[str] | None = None) -> int:
     p_preview.add_argument("--headless", action="store_true")
     p_preview.add_argument("--pressure", type=float, default=None, help="legacy alias for --set pressure=")
     p_preview.add_argument("--set", action="append", default=[], metavar="NAME=FLOAT")
+    p_preview.add_argument(
+        "--can",
+        action="append",
+        default=[],
+        metavar="ID:HEX",
+        help="demo CAN frame (0x200 speed/rpm); repeatable",
+    )
     p_preview.add_argument("--dump-fb", type=Path, default=None)
     p_preview.add_argument("--loop-frames", type=int, default=0)
     p_preview.add_argument("--exit", dest="exit_after", action="store_true")
@@ -93,6 +100,13 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--headless", action="store_true")
     p_run.add_argument("--pressure", type=float, default=None, help="legacy alias for --set pressure=")
     p_run.add_argument("--set", action="append", default=[], metavar="NAME=FLOAT")
+    p_run.add_argument(
+        "--can",
+        action="append",
+        default=[],
+        metavar="ID:HEX",
+        help="demo CAN frame (0x200 speed/rpm); repeatable",
+    )
     p_run.add_argument("--profile", type=Path, default=None)
     p_run.add_argument("--loop-frames", type=int, default=0)
     p_run.add_argument("--exit", dest="exit_after", action="store_true")
@@ -142,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
             caps = probe_lvgl(args.lvgl_path)
             asset_root = args.input.parent if args.input.suffix == ".qml" else None
             paths = emit_module(mod, caps, args.output, asset_root=asset_root)
+            if asset_root is not None:
+                paths.extend(maybe_emit_vehicle_bind(args.input, args.output))
             for p in paths:
                 print(p)
             return 0
@@ -159,10 +175,16 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     preview_bin = Path("build/tests/preview/qvgl_preview")
 
+            sets: list[str] = []
+            if args.can:
+                bindings = args.gen_dir / "vehicle_bindings.yaml"
+                sets.extend(prop_sets_from_can_args(args.can, bindings))
+            sets.extend(args.set)
+
             cmd = [str(preview_bin), "--gen-dir", str(gen_dir)]
             if args.headless:
                 cmd.append("--headless")
-            for item in args.set:
+            for item in sets:
                 cmd.extend(["--set", item])
             if args.pressure is not None:
                 cmd.extend(["--pressure", str(args.pressure)])
@@ -209,6 +231,7 @@ def main(argv: list[str] | None = None) -> int:
                 headless=args.headless,
                 pressure=args.pressure,
                 prop_sets=args.set,
+                can_frames=args.can or None,
                 loop_frames=args.loop_frames,
                 exit_after=args.exit_after,
             )

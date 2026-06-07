@@ -21,12 +21,15 @@ qvglc run examples/cluster_dual_gauge/cluster_dual_gauge.qml \
   --set speed_kmh=120 --set rpm=3500
 ```
 
-Vehicle struct → UI (CAN / app data):
+Vehicle / CAN → UI (`vehicle_bindings.yaml` beside the QML is picked up on compile):
 
 ```bash
 qvglc compile examples/cluster_dual_gauge/cluster_dual_gauge.qml -o /tmp/gen \
   --profile profiles/cluster_480x272.yaml
-qvglc vehicle-bind examples/cluster_dual_gauge/vehicle_bindings.yaml -o /tmp/gen
+
+qvglc run examples/cluster_dual_gauge/cluster_dual_gauge.qml \
+  --profile profiles/cluster_480x272.yaml \
+  --can 0x200:1405A00F --headless --exit --loop-frames 5
 ```
 
 Static cluster frame (480×272):

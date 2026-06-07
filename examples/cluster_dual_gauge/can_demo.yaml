@@ -1,0 +1,9 @@
+# Demo CAN replay log for cluster_dual_gauge (ID 0x200, DLC >= 4).
+# Replay: qvglc run cluster_dual_gauge.qml --can 0x200:04B00DAC --headless --exit
+frames:
+  - can: "0x200:B004AC0D"
+    note: "120.0 km/h, 3500 rpm"
+  - can: "0x200:02820000"
+    note: "40.0 km/h, 0 rpm"
+  - can: "0x200:1405A00F"
+    note: "130.0 km/h, 4000 rpm — matches cluster_dual_gauge_mid render golden"

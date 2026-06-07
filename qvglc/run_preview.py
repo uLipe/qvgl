@@ -62,6 +62,7 @@ def run_qml_preview(
     headless: bool = False,
     pressure: float | None = None,
     prop_sets: list[str] | None = None,
+    can_frames: list[str] | None = None,
     loop_frames: int = 0,
     exit_after: bool = False,
 ) -> int:
@@ -80,11 +81,21 @@ def run_qml_preview(
     caps = probe_lvgl(lvgl_path)
     emit_module(mod, caps, gen_dir, asset_root=qml_path.parent)
 
+    from qvglc.vehicle import maybe_emit_vehicle_bind, prop_sets_from_can_args
+
+    for p in maybe_emit_vehicle_bind(qml_path, gen_dir):
+        pass
+
+    sets: list[str] = []
+    if can_frames:
+        sets.extend(prop_sets_from_can_args(can_frames, qml_path.parent / "vehicle_bindings.yaml"))
+    sets.extend(prop_sets or [])
+
     preview_bin = ensure_preview_built(build_dir, gen_dir, lvgl_path)
     cmd = [str(preview_bin), "--gen-dir", str(gen_dir)]
     if headless:
         cmd.append("--headless")
-    for item in prop_sets or []:
+    for item in sets:
         cmd.extend(["--set", item])
     if pressure is not None:
         cmd.extend(["--pressure", str(pressure)])
