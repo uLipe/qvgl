@@ -40,8 +40,8 @@ def test_vehicle_bindings_reject_invalid(tmp_path: Path):
 def test_vehicle_bind_emit_markers(tmp_path: Path):
     data = load_bindings(BINDINGS)
     paths = emit_vehicle_apply(data, tmp_path)
-    assert len(paths) == 1
-    text = paths[0].read_text(encoding="utf-8")
+    assert len(paths) == 3
+    text = next(p.read_text(encoding="utf-8") for p in paths if p.name.endswith("_vehicle.h"))
     assert "qvgl_cluster_dual_gauge_apply_vehicle" in text
     assert "qvgl_cluster_dual_gauge_set_speed_kmh(ui, st->speed_kmh)" in text
     assert "qvgl_cluster_dual_gauge_set_rpm(ui, st->rpm)" in text

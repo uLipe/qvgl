@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from qvglc.emit_lvgl.arc_anim import ARC_ANIM_STATIC_CB
 from qvglc.emit_lvgl.arc_gauge import (
     ArcGaugePlan,
     emit_arc_gauge_init,
@@ -52,6 +53,7 @@ def _prop_default(prop: ModuleProperty) -> float:
 def _plan_arc(node: Node, initial: float) -> ArcGaugePlan:
     props = node.properties
     scale = f32_scale_for_range(float(props["minValue"]), float(props["maxValue"]))
+    anim_ms = int(props.get("valueAnimationDuration", 0))
     return plan_arc_gauge(
         from_deg=float(props["from"]),
         to_deg=float(props["to"]),
@@ -61,6 +63,7 @@ def _plan_arc(node: Node, initial: float) -> ArcGaugePlan:
         color=str(props["color"]),
         initial_value=initial,
         scale=scale,
+        value_anim_ms=anim_ms,
     )
 
 
@@ -286,6 +289,9 @@ def emit_hybrid(
             )
         else:
             raise EmitError(f"hybrid emit unsupported node kind: {node.kind}")
+
+    if any(p.value_anim_ms > 0 for p in arc_plans.values()):
+        static_cbs.append(ARC_ANIM_STATIC_CB)
 
     for h in click_handlers:
         field = names[next(i for i, n in enumerate(mod.nodes) if n.id == h.node)]

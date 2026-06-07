@@ -43,6 +43,8 @@ typedef struct {
     uint32_t loop_frames;
     const char * dump_fb;
     bool exit_after;
+    const char * can_args[8];
+    int can_count;
 } preview_opts_t;
 
 static void usage(const char * argv0)
@@ -55,7 +57,8 @@ static void usage(const char * argv0)
             "  --frames N           refr frames before dump (default 3)\n"
             "  --dump-fb PATH       write PNG of LVGL draw buffer\n"
             "  --loop-frames N      interactive/dummy loop iterations (default 0)\n"
-            "  --exit               exit after loop (for CI smoke)\n",
+            "  --exit               exit after loop (for CI smoke)\n"
+            "  --can ID:HEX         demo CAN frame → vehicle apply (repeatable)\n",
             argv0);
 }
 
@@ -122,6 +125,13 @@ static int parse_args(int argc, char ** argv, preview_opts_t * o)
         else if(strcmp(argv[i], "--exit") == 0) {
             o->exit_after = true;
         }
+        else if(strcmp(argv[i], "--can") == 0 && i + 1 < argc) {
+            if(o->can_count >= (int)(sizeof(o->can_args) / sizeof(o->can_args[0]))) {
+                fprintf(stderr, "qvgl_preview: too many --can frames\n");
+                return -1;
+            }
+            o->can_args[o->can_count++] = argv[++i];
+        }
         else {
             usage(argv[0]);
             return -1;
@@ -139,8 +149,19 @@ static int parse_args(int argc, char ** argv, preview_opts_t * o)
     return 0;
 }
 
+#if __has_include("qvgl_preview_vehicle.h")
+#include "qvgl_preview_vehicle.h"
+#define QVGL_PREVIEW_HAVE_VEHICLE 1
+#else
+#define QVGL_PREVIEW_HAVE_VEHICLE 0
+#endif
+
 static void apply_overrides(qvgl_preview_ui_t * ui, const preview_opts_t * o)
 {
+#if QVGL_PREVIEW_HAVE_VEHICLE
+    for(int i = 0; i < o->can_count; i++)
+        qvgl_preview_vehicle_apply_can(ui, o->can_args[i]);
+#endif
     for(int i = 0; i < o->override_count; i++) {
         if(qvgl_preview_set_property(ui, o->overrides[i].name, o->overrides[i].value) != 0) {
             fprintf(stderr, "qvgl_preview: unknown property %s\n", o->overrides[i].name);

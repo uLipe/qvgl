@@ -23,6 +23,7 @@
 
 #define LV_USE_ARC                  1
 #define LV_USE_SCALE                1
+#define LV_USE_ANIM                 1
 #define LV_USE_LABEL                1
 #define LV_USE_IMAGE                1
 #define LV_USE_LODEPNG              1

@@ -10,7 +10,7 @@ cases:
   - file: listview.qml
     code: unknown_type
   - file: number_animation.qml
-    code: unknown_type
+    code: unsupported_feature
   - file: js_math_call.qml
     code: unsupported_expr
   - file: states.qml

@@ -86,15 +86,17 @@ def run_qml_preview(
     for p in maybe_emit_vehicle_bind(qml_path, gen_dir):
         pass
 
-    sets: list[str] = []
-    if can_frames:
-        sets.extend(prop_sets_from_can_args(can_frames, qml_path.parent / "vehicle_bindings.yaml"))
-    sets.extend(prop_sets or [])
+    sets: list[str] = list(prop_sets or [])
+    bindings_path = qml_path.parent / "vehicle_bindings.yaml"
+    if can_frames and bindings_path.is_file():
+        sets.extend(prop_sets_from_can_args(can_frames, bindings_path))
 
     preview_bin = ensure_preview_built(build_dir, gen_dir, lvgl_path)
     cmd = [str(preview_bin), "--gen-dir", str(gen_dir)]
     if headless:
         cmd.append("--headless")
+    for item in can_frames or []:
+        cmd.extend(["--can", item])
     for item in sets:
         cmd.extend(["--set", item])
     if pressure is not None:

@@ -59,6 +59,10 @@ def emit_qvgl_lv_conf(
 #ifndef LV_USE_SCALE
 #define LV_USE_SCALE 1
 #endif
+
+#ifndef LV_USE_ANIM
+#define LV_USE_ANIM 1
+#endif
 {image_block}
 {chr(10).join(font_lines)}
 
@@ -77,6 +81,10 @@ def emit_qvgl_lvgl_config(*, fonts: set[str], use_image: bool) -> str:
         "    default y",
         "",
         "config LV_USE_SCALE",
+        "    bool",
+        "    default y",
+        "",
+        "config LV_USE_ANIM",
         "    bool",
         "    default y",
         "",

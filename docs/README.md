@@ -13,6 +13,7 @@ Read in order (top-down).
 | 7 | [07-proof-of-correctness.md](07-proof-of-correctness.md) | Golden strategy: IR, parser, render E2E |
 | 8 | [08-upstream-examples.md](08-upstream-examples.md) | Real Qt Creator / SDK example sources |
 | 11 | [11-qml-conformance-matrix.md](11-qml-conformance-matrix.md) | Qt Quick / Ultralite ↔ QVGL ↔ LVGL compatibility |
+| — | [benchmarks.md](benchmarks.md) | MCU timing notes, animation policy, CI reference |
 
 ## Related files
 

@@ -72,7 +72,7 @@ When a row is ✅ or ⚠️ at **Emit**, the **Proof** column points to the test
 | `ListView` | ❌ | ❌ | — | — | No model/view |
 | `Repeater` | ❌ | ❌ | — | — | |
 | `Timer` | ❌ | ❌ | — | — | Use app timer + setters |
-| `NumberAnimation` | ❌ | ❌ | — | — | 🔮  subset |
+| `NumberAnimation` | ✅ | ✅ | ✅ | ✅ `lv_anim` on `Arc.value` | `test_arc_animation.py`, `examples/arc_animated/` | `on value` only |
 | `Behavior` | ❌ | ❌ | — | — | |
 | `State` / `PropertyChanges` | ❌ | ❌ | — | — | |
 | `Connections` | ❌ | ❌ | — | — | |
@@ -206,12 +206,16 @@ Priority for **majority Ultralite-shaped HMI** (cluster, gauge, status strip):
 | ~~P1~~ | ~~`lv_scale` + tick labels~~ | Production gauges | done — `test_gauge_ticks.py` |
 | ~~P1~~ | ~~`border.*` on `Rectangle`~~ | Cards, slots | done |
 | ~~P2~~ | ~~Vehicle model / multi-setter API~~ | Live data without N setters | done — `vehicle-bind` |
-| P2 | `NumberAnimation` subset | Polish | planned |
+| ~~P2~~ | ~~`NumberAnimation` subset~~ | Needle sweep | done — `arc_animated` |
+| ~~P2~~ | ~~Warning telltales via vehicle-bind~~ | CAN bitmask → `Image` | done — `warning_telltales` |
+| ~~P2~~ | ~~CI GitHub Actions~~ | Host pytest + LVGL | done — `.github/workflows/ci.yml` |
 | P3 | `Row`/`Column` types (syntax sugar) | Ergonomics; anchors work today | planned |
 
 ---
 
 ## CI proof strategy
+
+**GitHub Actions** — `.github/workflows/ci.yml` runs full `pytest tests/python` with LVGL checked out at `../lvgl` (headless `SDL_VIDEODRIVER=dummy`).
 
 1. **Reject fixtures** — `tests/fixtures/qml/reject/manifest.yaml` (stable `DiagnosticCode`).
 2. **Conformance manifest** — `examples/conformance/manifest.yaml` (`pass` / `partial` / `reject`).

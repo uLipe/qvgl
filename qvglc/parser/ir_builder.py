@@ -45,6 +45,26 @@ class _Builder:
         self.bindings: list[Binding] = []
         self.handlers: list[Handler] = []
 
+    def _apply_arc_value_animation(self, arc_node: Node, anim: Object) -> None:
+        for name, val, loc in anim.properties:
+            if name == "__on_property__":
+                continue
+            if name == "duration":
+                arc_node.properties["valueAnimationDuration"] = int(val)
+                return
+            raise QvglDiagnostic(
+                DiagnosticCode.UNKNOWN_PROPERTY,
+                f"NumberAnimation property {name!r} not supported",
+                loc.line,
+                loc.column,
+            )
+        raise QvglDiagnostic(
+            DiagnosticCode.UNKNOWN_PROPERTY,
+            "NumberAnimation requires duration",
+            anim.loc.line,
+            anim.loc.column,
+        )
+
     def build_object(self, obj: Object, *, is_root: bool) -> int:
         idx = len(self.nodes)
         node = Node(kind=obj.type_name, id=obj.object_id)
@@ -54,6 +74,9 @@ class _Builder:
             self._collect_module_properties(obj)
 
         for child in obj.children:
+            if child.type_name == "NumberAnimation":
+                self._apply_arc_value_animation(node, child)
+                continue
             child_idx = self.build_object(child, is_root=False)
             node.children.append(child_idx)
             self.nodes[child_idx].parent = idx

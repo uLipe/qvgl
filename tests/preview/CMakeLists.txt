@@ -33,7 +33,7 @@ target_include_directories(qvgl_preview PRIVATE
     "${QVGL_LVGL_PATH}/src"
 )
 
-target_link_libraries(qvgl_preview PRIVATE lvgl m)
+target_link_libraries(qvgl_preview PRIVATE lvgl qvgl_runtime m)
 
 if(SDL2_FOUND)
     target_compile_definitions(qvgl_preview PRIVATE QVGL_PREVIEW_HAVE_SDL=1)

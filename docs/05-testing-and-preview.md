@@ -64,15 +64,13 @@ SDL_VIDEODRIVER=dummy ./build/qvgl_preview build/gen --frames 60 --exit
 
 Render golden (headless framebuffer compare): see [07-proof-of-correctness.md](07-proof-of-correctness.md#render-golden-phase-4).
 
-## CI matrix (planned)
+## CI matrix
 
 | Job | Runs |
 |-----|------|
-| `unit` | all `qvgl_tests` + pytest IR/emit |
-| `integration` | emit + `gcc -c` |
-| `render-golden` | headless framebuffer PNG compare |
-| `preview-smoke` | dummy SDL `--frames 60 --exit` |
-| `parser-golden` | QML → IR ≡ golden |
+| `test` (`.github/workflows/ci.yml`) | `pytest tests/python` + LVGL + headless preview renders |
+
+Planned later: split `integration` (emit + `gcc -c`) and optional upstream sync job.
 
 ## Coverage CLI
 

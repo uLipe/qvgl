@@ -17,6 +17,7 @@ class ArcGaugePlan:
     indicator_color: str
     track_color: str
     initial_i32: int
+    value_anim_ms: int = 0
 
 
 def _norm_angle(deg: float) -> int:
@@ -45,6 +46,7 @@ def plan_arc_gauge(
     initial_value: float,
     scale: int = 10,
     track_color: str = "#ff2a2a3e",
+    value_anim_ms: int = 0,
 ) -> ArcGaugePlan:
     start = _norm_angle(from_deg)
     end = _norm_angle(to_deg)
@@ -75,6 +77,7 @@ def plan_arc_gauge(
         indicator_color=color,
         track_color=track_color,
         initial_i32=init,
+        value_anim_ms=value_anim_ms,
     )
 
 
@@ -101,15 +104,6 @@ def emit_arc_gauge_init(var: str, plan: ArcGaugePlan, indent: str = "    ") -> l
         f"{ind}lv_obj_remove_flag({var}, LV_OBJ_FLAG_CLICKABLE);",
     ]
     return lines
-
-
-def emit_arc_value_update(var: str, expr_f32: str, plan: ArcGaugePlan, indent: str = "    ") -> str:
-    return (
-        f"{indent}int32_t arc_val = (int32_t)lroundf(({expr_f32}) * {plan.scale}.0f);\n"
-        f"{indent}if(arc_val < {plan.min_i32}) arc_val = {plan.min_i32};\n"
-        f"{indent}if(arc_val > {plan.max_i32}) arc_val = {plan.max_i32};\n"
-        f"{indent}lv_arc_set_value({var}, arc_val);"
-    )
 
 
 def f32_scale_for_range(min_v: float, max_v: float) -> int:

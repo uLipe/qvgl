@@ -48,7 +48,7 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
             obj.loc.column,
         )
 
-    if obj.type_name.endswith("Animation"):
+    if obj.type_name.endswith("Animation") and obj.type_name != "NumberAnimation":
         raise QvglDiagnostic(
             DiagnosticCode.UNKNOWN_TYPE,
             f"type {obj.type_name!r} is not supported",
@@ -129,6 +129,9 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
         _check_expr(val, loc, props, profile)
 
     for child in obj.children:
+        if child.type_name == "NumberAnimation":
+            _check_number_animation(child, obj.type_name, profile)
+            continue
         if child.type_name in _UNSUPPORTED_TYPES or child.type_name.endswith("Animation"):
             raise QvglDiagnostic(
                 DiagnosticCode.UNKNOWN_TYPE,
@@ -137,6 +140,64 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
                 child.loc.column,
             )
         _check_object(child, profile, props)
+
+
+def _animation_target(child: Object) -> str | None:
+    for name, val, _ in child.properties:
+        if name == "__on_property__":
+            return str(val)
+    return None
+
+
+def _check_number_animation(child: Object, parent_type: str, profile: Profile) -> None:
+    if "NumberAnimation" not in profile.allowed_animations:
+        raise QvglDiagnostic(
+            DiagnosticCode.UNSUPPORTED_FEATURE,
+            "NumberAnimation is not allowed by profile",
+            child.loc.line,
+            child.loc.column,
+        )
+    if parent_type != "Arc":
+        raise QvglDiagnostic(
+            DiagnosticCode.UNSUPPORTED_FEATURE,
+            "NumberAnimation is only supported on Arc",
+            child.loc.line,
+            child.loc.column,
+        )
+    target = _animation_target(child)
+    if target != "value":
+        raise QvglDiagnostic(
+            DiagnosticCode.UNSUPPORTED_FEATURE,
+            f"NumberAnimation on {target!r} is not supported (only Arc.value)",
+            child.loc.line,
+            child.loc.column,
+        )
+    duration = None
+    for name, val, loc in child.properties:
+        if name == "__on_property__":
+            continue
+        if name != "duration":
+            raise QvglDiagnostic(
+                DiagnosticCode.UNKNOWN_PROPERTY,
+                f"NumberAnimation property {name!r} not supported",
+                loc.line,
+                loc.column,
+            )
+        if not isinstance(val, (int, float)) or val <= 0:
+            raise QvglDiagnostic(
+                DiagnosticCode.UNSUPPORTED_EXPR,
+                "NumberAnimation duration must be a positive number",
+                loc.line,
+                loc.column,
+            )
+        duration = int(val)
+    if duration is None:
+        raise QvglDiagnostic(
+            DiagnosticCode.UNKNOWN_PROPERTY,
+            "NumberAnimation requires duration",
+            child.loc.line,
+            child.loc.column,
+        )
 
 
 def _check_handler(val: Any, loc) -> None:

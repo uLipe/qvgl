@@ -28,6 +28,8 @@ types:
   Image:
     extends: Item
     properties: [source, fillMode]
+  NumberAnimation:
+    properties: [duration]
 
 anchors:
   allowed: [fill, centerIn, top, bottom, left, right, horizontalCenter, verticalCenter, margins]
@@ -37,7 +39,7 @@ bindings:
   disallow: [js_function, arbitrary_call]
 
 animations:
-  allowed: []
+  allowed: [NumberAnimation]
 
 display:
   width: 480

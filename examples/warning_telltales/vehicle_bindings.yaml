@@ -1,0 +1,9 @@
+module: warning_telltales
+mappings: []
+warning_lamps:
+  - bit: QVGL_WARN_OIL_PRESSURE
+    image: oilLamp
+  - bit: QVGL_WARN_COOLANT
+    image: coolantLamp
+  - bit: QVGL_WARN_ABS
+    image: absLamp

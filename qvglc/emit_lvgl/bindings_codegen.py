@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from qvglc.emit_lvgl.arc_gauge import ArcGaugePlan, emit_arc_value_update
+from qvglc.emit_lvgl.arc_anim import emit_arc_value_update
+from qvglc.emit_lvgl.arc_gauge import ArcGaugePlan
 from qvglc.ir.model import Module
 
 from .errors import EmitError
