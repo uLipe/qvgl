@@ -73,3 +73,4 @@ ESP-IDF projects typically use a local component (see `esp32p4_qvgl_shell/compon
 - [ ] Firmware links `qvgl/runtime` + `generated/ui_*.c` + LVGL
 - [ ] Display init in **platform** project only
 - [ ] App task/timer ≥10 Hz calling setters (plot, gauge, bindings)
+- [ ] New Qt Quick Control types: example QML in `qvgl/examples/`, then `compile_ui.sh` + `idf.py build` on P4 before merge

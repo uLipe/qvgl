@@ -155,6 +155,10 @@ def _emit_consumer(
         if prop.type != "bool":
             raise EmitError(f"binding key checked requires bool property, got {prop.type!r}")
         return f"    qvgl_widget_set_checked(ui->{field}, {param});"
+    if key == "currentIndex":
+        if prop.type != "i32":
+            raise EmitError(f"binding key currentIndex requires int property, got {prop.type!r}")
+        return f"    qvgl_widget_set_dropdown_selected(ui->{field}, {param});"
     if key == "text":
         return _emit_text_consumer(prop, field, param, expr)
     if key == "visible":

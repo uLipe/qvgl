@@ -15,6 +15,8 @@ class TokKind(Enum):
     STRING = auto()
     LBRACE = auto()
     RBRACE = auto()
+    LBRACKET = auto()
+    RBRACKET = auto()
     COLON = auto()
     DOT = auto()
     LPAREN = auto()
@@ -50,6 +52,11 @@ class Lexer:
             if ch in "{}":
                 self._advance()
                 kind = TokKind.LBRACE if ch == "{" else TokKind.RBRACE
+                yield Token(kind, ch, start_line, start_col)
+                continue
+            if ch in "[]":
+                self._advance()
+                kind = TokKind.LBRACKET if ch == "[" else TokKind.RBRACKET
                 yield Token(kind, ch, start_line, start_col)
                 continue
             if ch == ":":

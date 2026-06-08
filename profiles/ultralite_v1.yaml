@@ -60,6 +60,14 @@ types:
     extends: Item
     properties: [checked, text, color, font.pixelSize]
     signals: [clicked, pressed, released]
+  Button:
+    extends: Item
+    properties: [text, color, font.pixelSize, enabled]
+    signals: [clicked, pressed, released]
+  ComboBox:
+    extends: Item
+    properties: [model, currentIndex, font.pixelSize]
+    signals: [activated, pressed, released]
   LinePlot:
     extends: Item
     properties: [lineColor, plotBg, gridColor, axisColor, labelColor, unitMutedColor, gridDiv, xMin, xMax, yMin, yMax, padL, padR, padT, padB, xUnit, yUnit, hoverEnabled]

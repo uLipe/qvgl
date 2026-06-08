@@ -14,6 +14,7 @@ from qvglc.emit_lvgl.conf import (
 from qvglc.emit_lvgl.layout import layout_module
 from qvglc.emit_lvgl.preview_shim import emit_preview_shim
 from qvglc.ir.model import Module, Node
+from qvglc.theme import resolve_theme_member
 from qvglc.layout import NodeLayout
 from qvglc.lvgl_probe.probe import LvglCapabilities
 
@@ -39,6 +40,12 @@ from .line_plot import (
     emit_line_plot_struct_field,
     plan_line_plot,
     plan_line_plot_hover,
+)
+from .combo import (
+    combo_initial_index,
+    combo_model_items,
+    combo_options_c_literal,
+    emit_combo_create,
 )
 from .slider import (
     SliderEmitPlan,
@@ -102,13 +109,32 @@ _SIGNAL_EVENT = {
     "pressed": "LV_EVENT_PRESSED",
     "released": "LV_EVENT_RELEASED",
     "moved": "LV_EVENT_VALUE_CHANGED",
+    "valueChanged": "LV_EVENT_VALUE_CHANGED",
+    "activated": "LV_EVENT_VALUE_CHANGED",
 }
+
+_SLIDER_HANDLER_SIGNALS = frozenset({"moved", "valueChanged"})
+_COMBO_HANDLER_SIGNALS = frozenset({"activated"})
 
 
 def _handler_cb_name(mod: Module, field: str, signal: str) -> str:
     if signal == "clicked":
         return f"qvgl_{mod.module}_{field}_click_cb"
     return f"qvgl_{mod.module}_{field}_{signal}_cb"
+
+
+def _handler_cbs_for(
+    handlers: list,
+    node_id: str,
+    field: str,
+    mod: Module,
+    signals: frozenset[str],
+) -> list[str]:
+    out: list[str] = []
+    for h in handlers:
+        if h.node == node_id and h.signal in signals:
+            out.append(_handler_cb_name(mod, field, h.signal))
+    return out
 
 
 def _with_style(node: Node, field: str, lines: list[str]) -> list[str]:
@@ -559,12 +585,11 @@ def _emit_node(
 
     if node.kind == "Slider":
         plan = slider_plans[idx]
-        handler_cb = None
-        if node.id:
-            for h in handlers:
-                if h.node == node.id and h.signal == "moved":
-                    handler_cb = _handler_cb_name(mod, field, h.signal)
-                    break
+        handler_cbs = (
+            _handler_cbs_for(handlers, node.id, field, mod, _SLIDER_HANDLER_SIGNALS)
+            if node.id
+            else []
+        )
         if responsive and parent_node.kind == "ColumnLayout":
             geom = [
                 f"    lv_obj_set_width(ui->{field}, LV_PCT(100));",
@@ -575,7 +600,7 @@ def _emit_node(
         return _with_style(
             node,
             field,
-            emit_slider_create(field, parent, plan, geom, handler_cb=handler_cb),
+            emit_slider_create(field, parent, plan, geom, handler_cbs=handler_cbs),
         )
 
     if node.kind == "Switch":
@@ -618,29 +643,83 @@ def _emit_node(
             )
         return _with_style(node, field, lines)
 
-    if node.kind == "ToolButton":
+    if node.kind in ("ToolButton", "Button"):
         px = int(node.properties.get("font.pixelSize", 14))
         label = _text_literal(node, mod)
-        color = node.properties.get("color", "#ffffffff")
+        color = node.properties.get("color", "#ffe0e0e0")
         lines = [
             f"    ui->{field} = lv_button_create({parent});",
             *emit_tool_button_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
-            f"    lv_obj_set_style_bg_opa(ui->{field}, LV_OPA_TRANSP, 0);",
-            f"    lv_obj_set_style_shadow_width(ui->{field}, 0, 0);",
-            f"    lv_obj_set_style_border_width(ui->{field}, 0, 0);",
-            f"    lv_obj_set_style_pad_all(ui->{field}, 0, 0);",
-            f"    {{",
-            f"        lv_obj_t * btn_label = lv_label_create(ui->{field});",
-            f'        lv_label_set_text(btn_label, "{label}");',
-            f"        lv_obj_set_style_text_color(btn_label, {lv_color_hex_expr(str(color))}, 0);",
-            f"        lv_obj_set_style_text_font(btn_label, {lv_font_expr(profile, px)}, 0);",
-            f"        lv_obj_center(btn_label);",
-            f"    }}",
         ]
+        if node.kind == "Button":
+            primary = resolve_theme_member(profile, "primary")
+            lines.extend(
+                [
+                    f"    lv_obj_set_style_bg_color(ui->{field}, {lv_color_hex_expr(primary)}, 0);",
+                    f"    lv_obj_set_style_bg_opa(ui->{field}, LV_OPA_COVER, 0);",
+                    f"    lv_obj_set_style_radius(ui->{field}, 4, 0);",
+                    f"    lv_obj_set_style_shadow_width(ui->{field}, 0, 0);",
+                    f"    lv_obj_set_style_border_width(ui->{field}, 0, 0);",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    f"    lv_obj_set_style_bg_opa(ui->{field}, LV_OPA_TRANSP, 0);",
+                    f"    lv_obj_set_style_shadow_width(ui->{field}, 0, 0);",
+                    f"    lv_obj_set_style_border_width(ui->{field}, 0, 0);",
+                    f"    lv_obj_set_style_pad_all(ui->{field}, 0, 0);",
+                ]
+            )
+        lines.extend(
+            [
+                f"    {{",
+                f"        lv_obj_t * btn_label = lv_label_create(ui->{field});",
+                f'        lv_label_set_text(btn_label, "{label}");',
+                f"        lv_obj_set_style_text_color(btn_label, {lv_color_hex_expr(str(color))}, 0);",
+                f"        lv_obj_set_style_text_font(btn_label, {lv_font_expr(profile, px)}, 0);",
+                f"        lv_obj_center(btn_label);",
+                f"    }}",
+            ]
+        )
         if node.id and node.id in handler_ids:
             lines.append(
                 f"    lv_obj_add_event_cb(ui->{field}, qvgl_{mod.module}_{field}_click_cb, LV_EVENT_CLICKED, NULL);"
             )
+        return _with_style(node, field, lines)
+
+    if node.kind == "ComboBox":
+        px = int(node.properties.get("font.pixelSize", 14))
+        items = combo_model_items(node)
+        options = combo_options_c_literal(items)
+        selected = combo_initial_index(node, mod)
+        if selected < 0:
+            selected = 0
+        if selected >= len(items):
+            selected = max(0, len(items) - 1)
+        handler_cbs = (
+            _handler_cbs_for(handlers, node.id, field, mod, _COMBO_HANDLER_SIGNALS)
+            if node.id
+            else []
+        )
+        if responsive and parent_node.kind in ("ColumnLayout", "RowLayout"):
+            geom = [
+                f"    lv_obj_set_width(ui->{field}, LV_PCT(100));",
+                f"    lv_obj_set_height(ui->{field}, {max(r.h, 40)});",
+            ]
+        else:
+            geom = emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y)
+        lines = emit_combo_create(
+            field,
+            parent,
+            geom,
+            options=options,
+            selected=selected,
+            handler_cbs=handler_cbs,
+        )
+        lines.append(
+            f"    lv_obj_set_style_text_font(ui->{field}, {lv_font_expr(profile, px)}, 0);"
+        )
         return _with_style(node, field, lines)
 
     raise EmitError(f"static emit unsupported node kind: {node.kind}")

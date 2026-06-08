@@ -44,6 +44,18 @@ void app_on_mute_toggled(void)
 {
 }
 
+void app_on_gain_changed(void)
+{
+}
+
+void app_on_preset_activated(void)
+{
+}
+
+void app_on_apply_clicked(void)
+{
+}
+
 typedef struct {
     char name[64];
     char value[128];

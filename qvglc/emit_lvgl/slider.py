@@ -70,7 +70,7 @@ def emit_slider_create(
     plan: SliderEmitPlan,
     geom: list[str],
     *,
-    handler_cb: str | None = None,
+    handler_cbs: list[str] | None = None,
 ) -> list[str]:
     lines = [
         f"    ui->{field} = lv_slider_create({parent});",
@@ -78,8 +78,8 @@ def emit_slider_create(
         f"    lv_slider_set_range(ui->{field}, 0, {plan.range_i32});",
         f"    lv_slider_set_value(ui->{field}, {plan.initial_i32}, LV_ANIM_OFF);",
     ]
-    if handler_cb:
+    for cb in handler_cbs or []:
         lines.append(
-            f"    lv_obj_add_event_cb(ui->{field}, {handler_cb}, LV_EVENT_VALUE_CHANGED, NULL);"
+            f"    lv_obj_add_event_cb(ui->{field}, {cb}, LV_EVENT_VALUE_CHANGED, NULL);"
         )
     return lines

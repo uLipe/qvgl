@@ -234,17 +234,19 @@ def _inset_rect(parent: Rect, margins: dict[str, int]) -> Rect:
 def _intrinsic_size(node: Node) -> tuple[int, int]:
     w = int(node.properties["width"]) if "width" in node.properties else 0
     h = int(node.properties["height"]) if "height" in node.properties else 0
-    if node.kind in ("Text", "ToolButton") and (w <= 0 or h <= 0):
+    if node.kind in ("Text", "ToolButton", "Button") and (w <= 0 or h <= 0):
         text = node.properties.get("text", "")
         if isinstance(text, dict):
             text = "-0.7 bar"
         px = int(node.properties.get("font.pixelSize", 14))
         tw = max(1, int(len(str(text)) * px * 0.55))
         th = max(1, px)
-        if node.kind == "ToolButton":
+        if node.kind in ("ToolButton", "Button"):
             tw = max(tw + 16, 28)
             th = max(th + 8, 28)
         return (tw if w <= 0 else w, th if h <= 0 else h)
+    if node.kind == "ComboBox" and (w <= 0 or h <= 0):
+        return (max(w, 200), max(h, 40))
     if node.kind == "Slider" and (w <= 0 or h <= 0):
         return (max(w, 200), max(h, 40))
     if node.kind in ("Switch", "CheckBox") and (w <= 0 or h <= 0):

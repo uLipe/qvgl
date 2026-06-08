@@ -72,6 +72,16 @@ void qvgl_widget_set_checked(lv_obj_t * obj, bool checked)
         lv_obj_clear_state(obj, LV_STATE_CHECKED);
 }
 
+void qvgl_widget_set_dropdown_selected(lv_obj_t * dropdown, int32_t index)
+{
+    if(!dropdown) return;
+    uint32_t cnt = lv_dropdown_get_option_cnt(dropdown);
+    if(cnt == 0u) return;
+    if(index < 0) index = 0;
+    if((uint32_t)index >= cnt) index = (int32_t)cnt - 1;
+    lv_dropdown_set_selected(dropdown, (uint32_t)index);
+}
+
 void qvgl_widget_set_slider_value(lv_obj_t * slider, float value, float vmin, float vmax)
 {
     if(!slider) return;

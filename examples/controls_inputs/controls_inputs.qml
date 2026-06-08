@@ -5,11 +5,12 @@ import QtQuick.Layouts
 
 Item {
     width: 320
-    height: 260
+    height: 320
 
     property real gain: 0.5
     property bool outputEnabled: true
     property bool mute: false
+    property int preset: 0
 
     Rectangle {
         anchors.fill: parent
@@ -34,6 +35,7 @@ Item {
                 to: 1
                 value: gain
                 onMoved: app_on_gain_moved()
+                onValueChanged: app_on_gain_changed()
             }
 
             RowLayout {
@@ -59,6 +61,21 @@ Item {
                 text: "Mute"
                 checked: mute
                 onClicked: app_on_mute_toggled()
+            }
+
+            ComboBox {
+                id: presetBox
+                Layout.fillWidth: true
+                model: ["Off", "Low", "High"]
+                currentIndex: preset
+                onActivated: app_on_preset_activated()
+            }
+
+            Button {
+                id: applyBtn
+                Layout.fillWidth: true
+                text: "Apply"
+                onClicked: app_on_apply_clicked()
             }
         }
     }

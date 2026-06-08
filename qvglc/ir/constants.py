@@ -19,6 +19,8 @@ NODE_KIND = {
     "Slider": 12,
     "Switch": 13,
     "CheckBox": 14,
+    "Button": 15,
+    "ComboBox": 16,
 }
 
 NODE_KIND_NAME = {v: k for k, v in NODE_KIND.items()}

@@ -19,6 +19,7 @@ _LV_WIDGET_KCONFIG = (
     "LV_USE_SLIDER",
     "LV_USE_SWITCH",
     "LV_USE_CHECKBOX",
+    "LV_USE_DROPDOWN",
     "LV_USE_CHART",
     "LV_USE_SCALE",
     "LV_USE_ANIM",
@@ -28,7 +29,7 @@ _LV_WIDGET_KCONFIG = (
 def collect_required_fonts(mod: Module, profile: Profile) -> set[str]:
     fonts: set[str] = set()
     for node in mod.nodes:
-        if node.kind in ("Text", "ToolButton"):
+        if node.kind in ("Text", "ToolButton", "Button", "CheckBox", "ComboBox"):
             px = int(node.properties.get("font.pixelSize", 14))
             fonts.add(profile.font_for_pixel_size(px))
     if not fonts:
@@ -84,6 +85,10 @@ def emit_qvgl_lv_conf(
 
 #ifndef LV_USE_CHECKBOX
 #define LV_USE_CHECKBOX 1
+#endif
+
+#ifndef LV_USE_DROPDOWN
+#define LV_USE_DROPDOWN 1
 #endif
 
 #ifndef LV_USE_CHART

@@ -134,9 +134,24 @@ class Parser:
             key = "onClicked"
         obj.properties.append((key, val, loc))
 
+    def _parse_array(self) -> list[Any]:
+        self._expect(TokKind.LBRACKET, "'['")
+        items: list[Any] = []
+        if not self._check(TokKind.RBRACKET):
+            val, _ = self._parse_value()
+            items.append(val)
+            while self._check(TokKind.COMMA):
+                self._advance()
+                val, _ = self._parse_value()
+                items.append(val)
+        self._expect(TokKind.RBRACKET, "']'")
+        return items
+
     def _parse_value(self) -> tuple[Any, Loc]:
         tok = self._peek()
         loc = Loc(tok.line, tok.column)
+        if self._check(TokKind.LBRACKET):
+            return self._parse_array(), loc
         if self._check(TokKind.STRING):
             return self._advance().text, loc
         if self._check(TokKind.NUMBER):

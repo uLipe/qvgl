@@ -160,6 +160,9 @@ def _check_object(
                 loc.line,
                 loc.column,
             )
+        if obj.type_name == "ComboBox" and name == "model":
+            _check_string_array(val, loc)
+            continue
         _check_expr(val, loc, props, profile)
 
     for child in obj.children:
@@ -234,6 +237,24 @@ def _check_number_animation(child: Object, parent_type: str, profile: Profile) -
         )
 
 
+def _check_string_array(val: Any, loc) -> None:
+    if not isinstance(val, list) or not val:
+        raise QvglDiagnostic(
+            DiagnosticCode.UNSUPPORTED_EXPR,
+            "model must be a non-empty string array",
+            loc.line,
+            loc.column,
+        )
+    for item in val:
+        if not isinstance(item, str):
+            raise QvglDiagnostic(
+                DiagnosticCode.UNSUPPORTED_EXPR,
+                "model entries must be strings",
+                loc.line,
+                loc.column,
+            )
+
+
 def _check_handler(val: Any, loc) -> None:
     if isinstance(val, dict) and val.get("op") == "call":
         callee = val.get("callee", "")
@@ -264,6 +285,8 @@ def _check_handler(val: Any, loc) -> None:
 
 def _check_expr(val: Any, loc, props: dict[str, str], profile: Profile) -> None:
     if val is None or isinstance(val, (str, int, float, bool)):
+        return
+    if isinstance(val, list):
         return
     if isinstance(val, Object):
         raise QvglDiagnostic(
