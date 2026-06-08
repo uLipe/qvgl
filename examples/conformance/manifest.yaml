@@ -55,6 +55,11 @@ cases:
     profile: profiles/ultralite_v1.yaml
     tier: pass
 
+  - id: material_card
+    qml: examples/material_card/material_card.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
   - id: controls_card
     qml: examples/controls_card/controls_card.qml
     profile: profiles/ultralite_v1.yaml
@@ -98,3 +103,9 @@ cases:
     profile: profiles/ultralite_v1.yaml
     tier: reject
     expect_code: unsupported_feature
+
+  - id: reject_unknown_theme_token
+    qml: tests/fixtures/qml/reject/unknown_theme_token.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: reject
+    expect_code: unsupported_expr

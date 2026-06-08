@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from qvglc.profile.load import Profile
+from qvglc.theme import check_theme_member
 
 from .ast import Document, Object
 from .errors import DiagnosticCode, QvglDiagnostic
@@ -278,9 +279,9 @@ def _check_expr(val: Any, loc, props: dict[str, str], profile: Profile) -> None:
     if op == "sym":
         name = val.get("name", "")
         if name.startswith("Theme.") or name.startswith("Material."):
-            member = name.split(".", 1)[1]
-            if member in profile.theme_colors:
-                return
+            ns, member = name.split(".", 1)
+            check_theme_member(ns, member, profile, line=loc.line, column=loc.column)
+            return
         if name.startswith("Image."):
             member = name.split(".", 1)[1]
             if member in ("Stretch", "PreserveAspectFit", "PreserveAspectCrop"):
@@ -295,7 +296,8 @@ def _check_expr(val: Any, loc, props: dict[str, str], profile: Profile) -> None:
         member = val.get("member", "")
         if base in ("Text", "Item") and member.startswith("Align"):
             return
-        if base in ("Theme", "Material") and member in profile.theme_colors:
+        if base in ("Theme", "Material"):
+            check_theme_member(base, member, profile, line=loc.line, column=loc.column)
             return
         if base == "Label" and member.startswith("Align"):
             return

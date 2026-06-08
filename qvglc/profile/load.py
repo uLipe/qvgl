@@ -76,7 +76,13 @@ def load_profile(path: Path | str) -> Profile:
         )
     else:
         font_tiers = DEFAULT_FONT_TIERS
-    theme_colors = dict(data.get("theme", {}).get("colors", {}))
+    theme_section = data.get("theme", {})
+    theme_colors = dict(theme_section.get("colors", {}))
+    aliases = theme_section.get("aliases", {})
+    if aliases:
+        from qvglc.theme import merge_theme_aliases
+
+        theme_colors = merge_theme_aliases(theme_colors, dict(aliases))
     return Profile(
         name=str(data["name"]),
         version=int(data.get("version", 1)),

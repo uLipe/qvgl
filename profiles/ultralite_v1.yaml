@@ -80,11 +80,17 @@ fonts:
       lv_id: montserrat_48
 
 theme:
+  # Canonical palette — Theme.* and Material.* resolve here at compile time.
   colors:
     surface: "#1a1a2e"
     foreground: "#e0e0e0"
     accent: "#00d4aa"
     accent_dim: "#505050"
+    primary: "#3d5a80"
+    secondary: "#888888"
+    divider: "#3d3e42"
+  aliases:
+    background: surface
 
 coverage:
   fail_on_unknown_type: true

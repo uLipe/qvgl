@@ -4,6 +4,7 @@ from typing import Any
 
 from qvglc.ir.model import Binding, Handler, Module, ModuleProperty, Node
 from qvglc.profile.load import Profile
+from qvglc.theme import normalize_color, resolve_theme_member
 
 from .ast import Document, Object
 from .errors import DiagnosticCode, QvglDiagnostic
@@ -249,31 +250,31 @@ def _lower_literal(val: Any) -> Any:
     return val
 
 
-def _resolve_theme_member(profile: Profile, member: str, loc) -> str:
-    if member not in profile.theme_colors:
+def _resolve_theme_member(profile: Profile, namespace: str, member: str, loc) -> str:
+    try:
+        return resolve_theme_member(profile, member)
+    except KeyError:
         raise QvglDiagnostic(
             DiagnosticCode.UNSUPPORTED_EXPR,
-            f"unknown theme token Theme.{member}",
+            f"unknown theme token {namespace}.{member}",
             loc.line,
             loc.column,
-        )
-    return _normalize_color(profile.theme_colors[member])
+        ) from None
 
 
 def _lower_property_value(val: Any, profile: Profile, loc) -> Any:
     if isinstance(val, dict) and val.get("op") == "member":
         base = val.get("base", "")
         member = val.get("member", "")
-        if base == "Theme":
-            return _resolve_theme_member(profile, member, loc)
-        if base == "Material" and member in profile.theme_colors:
-            return _resolve_theme_member(profile, member, loc)
+        if base in ("Theme", "Material"):
+            return _resolve_theme_member(profile, base, member, loc)
         if base == "Image" and member in ("Stretch", "PreserveAspectFit", "PreserveAspectCrop"):
             return member
     if isinstance(val, dict) and val.get("op") == "sym":
         name = val.get("name", "")
         if name.startswith("Theme.") or name.startswith("Material."):
-            return _resolve_theme_member(profile, name.split(".", 1)[1], loc)
+            ns, member = name.split(".", 1)
+            return _resolve_theme_member(profile, ns, member, loc)
         if name.startswith("Image."):
             member = name.split(".", 1)[1]
             if member in ("Stretch", "PreserveAspectFit", "PreserveAspectCrop"):
@@ -285,12 +286,10 @@ def _lower_property_value(val: Any, profile: Profile, loc) -> Any:
 
 
 def _normalize_color(s: str) -> str:
-    h = s[1:].lower()
-    if len(h) == 6:
-        return f"#ff{h}"
-    if len(h) == 8:
-        return f"#{h}"
-    return s
+    try:
+        return normalize_color(s)
+    except ValueError as e:
+        raise QvglDiagnostic(DiagnosticCode.UNSUPPORTED_EXPR, str(e)) from e
 
 
 def _lower_expr(expr: dict[str, Any], loc) -> dict[str, Any]:
