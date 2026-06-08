@@ -32,6 +32,7 @@ HOVER_MARKERS = [
     "set_plot_cursor",
     "_hover_cb",
     "qvgl_line_plot_card_set_cursorText",
+    "qvgl_widget_set_visible(ui->cursor_label",
     "_cross_v",
 ]
 

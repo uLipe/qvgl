@@ -4,12 +4,13 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 Item {
+    // Design reference size (preview goldens); on MCU root fills the screen via LVGL flex.
     width: 480
     height: 300
 
     property string plotTitle: "Phase current Ia"
     property string unit: "A"
-    property string cursorText: "t=\u2014  y=\u2014"
+    property string cursorText: ""
 
     Rectangle {
         anchors.fill: parent

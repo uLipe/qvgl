@@ -98,11 +98,10 @@ def _layout_children(
             x = main_pos
             y = cross_pos if cross_fill else cross_pos + (cross_size - h) // 2
 
-        prev = layouts[child_idx]
         layouts[child_idx] = NodeLayout(
             Rect(x, y, max(1, w), max(1, h)),
-            prev.align_center,
-            prev.align_center_offset_y,
+            False,
+            0,
         )
         main_pos += main_size + spacing
 

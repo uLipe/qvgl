@@ -33,10 +33,23 @@ from .line_plot import (
     emit_line_plot_hover_callback,
     emit_line_plot_hover_fields,
     emit_line_plot_module_api,
+    emit_line_plot_resize_callback,
     emit_line_plot_static,
     emit_line_plot_struct_field,
     plan_line_plot,
     plan_line_plot_hover,
+)
+from .responsive_layout import (
+    anchor_margins,
+    anchors_fill_parent,
+    emit_flex_column,
+    emit_flex_grow_row_child,
+    emit_flex_row,
+    emit_pct_fill,
+    emit_tool_button_geometry,
+    emit_widget_geometry,
+    layout_fill_width,
+    module_uses_responsive_layout,
 )
 from .widget_style import (
     emit_border,
@@ -143,6 +156,7 @@ def emit_static(
     handler_ids = {h.node for h in mod.handlers}
     hover_plan = plan_line_plot_hover(mod, layouts, names)
     cursor_text_prop = cursor_text_property(mod) if hover_plan else None
+    responsive = module_uses_responsive_layout(mod)
     plot_plans: list[tuple[str, object]] = []
 
     fields: list[str] = []
@@ -172,7 +186,7 @@ def emit_static(
     for prop in bound_props:
         fields.append(struct_field_decl(prop))
 
-    create.extend(_emit_root(root, root_lay, names[mod.root], profile))
+    create.extend(_emit_root(root, root_lay, names[mod.root], profile, responsive))
 
     for idx, node in enumerate(mod.nodes):
         if idx == mod.root:
@@ -180,6 +194,7 @@ def emit_static(
         lay = layouts[idx]
         rx, ry = _rel_pos(mod, layouts, idx)
         parent = f"ui->{names[node.parent]}"
+        parent_node = mod.nodes[node.parent]
         create.extend(
             _emit_node(
                 mod,
@@ -188,14 +203,20 @@ def emit_static(
                 lay,
                 names[idx],
                 parent,
+                parent_node,
                 handler_ids,
                 profile,
                 id_by_source,
                 rx,
                 ry,
                 hover_plan,
+                responsive,
             )
         )
+
+    if responsive:
+        for field, _ in plot_plans:
+            static_cbs.append(emit_line_plot_resize_callback(mod, field))
 
     for h in signal_handlers:
         cb = h.handler
@@ -350,12 +371,13 @@ void qvgl_ui_{mod.module}_create(lv_obj_t * parent, qvgl_ui_{mod.module}_t * ui)
     return paths
 
 
-def _emit_root(root: Node, lay: NodeLayout, field: str, profile) -> list[str]:
+def _emit_root(root: Node, lay: NodeLayout, field: str, profile, responsive: bool) -> list[str]:
     r = lay.rect
+    size_lines = emit_pct_fill(field) if responsive else [f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});"]
     lines = [
         f"    ui->{field} = lv_obj_create(parent);",
         f"    lv_obj_remove_style_all(ui->{field});",
-        f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
+        *size_lines,
         f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
     ]
     if root.kind == "Rectangle" and "color" in root.properties:
@@ -377,20 +399,25 @@ def _emit_node(
     lay: NodeLayout,
     field: str,
     parent: str,
+    parent_node: Node,
     handler_ids: set[str],
     profile,
     id_by_source: dict[str, tuple[str, int, int]],
     rel_x: int,
     rel_y: int,
     hover_plan,
+    responsive: bool,
 ) -> list[str]:
     r = lay.rect
     if node.kind == "Rectangle":
+        if responsive and anchors_fill_parent(node):
+            geom = emit_pct_fill(field)
+        else:
+            geom = emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y)
         lines = [
             f"    ui->{field} = lv_obj_create({parent});",
             f"    lv_obj_remove_style_all(ui->{field});",
-            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-            f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+            *geom,
         ]
         if "color" in node.properties:
             lines += [
@@ -413,15 +440,16 @@ def _emit_node(
             f"    lv_obj_set_style_text_color(ui->{field}, {lv_color_hex_expr(str(color))}, 0);",
             f"    lv_obj_set_style_text_font(ui->{field}, {lv_font_expr(profile, px)}, 0);",
         ]
-        if lay.align_center:
+        if responsive and parent_node.kind == "RowLayout" and layout_fill_width(node):
+            lines.extend(emit_flex_grow_row_child(field))
+        elif responsive and parent_node.kind == "ColumnLayout":
+            lines.append(f"    lv_obj_set_width(ui->{field}, LV_PCT(100));")
+        elif lay.align_center:
             lines.append(
                 f"    lv_obj_align(ui->{field}, LV_ALIGN_CENTER, 0, {lay.align_center_offset_y});"
             )
         else:
-            lines += [
-                f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-                f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
-            ]
+            lines.extend(emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y))
         return _with_style(node, field, lines)
 
     if node.kind == "Image":
@@ -432,17 +460,21 @@ def _emit_node(
         lines = [
             f"    ui->{field} = lv_image_create({parent});",
             f"    lv_image_set_src(ui->{field}, &qvgl_asset_{aid});",
-            f"    lv_obj_set_size(ui->{field}, {box.w}, {box.h});",
-            f"    lv_obj_set_pos(ui->{field}, {box.x}, {box.y});",
         ]
+        if responsive and anchors_fill_parent(node):
+            lines += emit_pct_fill(field)
+        else:
+            lines += [
+                f"    lv_obj_set_size(ui->{field}, {box.w}, {box.h});",
+                f"    lv_obj_set_pos(ui->{field}, {box.x}, {box.y});",
+            ]
         return _with_style(node, field, lines)
 
     if node.kind == "MouseArea":
         lines = [
             f"    ui->{field} = lv_obj_create({parent});",
             f"    lv_obj_remove_style_all(ui->{field});",
-            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-            f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+            *emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
             f"    lv_obj_add_flag(ui->{field}, LV_OBJ_FLAG_CLICKABLE);",
         ]
         if node.id:
@@ -457,11 +489,31 @@ def _emit_node(
         return _with_style(node, field, lines)
 
     if node.kind in ("ColumnLayout", "RowLayout"):
+        spacing = int(node.properties.get("spacing", 0))
+        if responsive:
+            if node.kind == "ColumnLayout" and anchors_fill_parent(node):
+                geom = emit_pct_fill(field)
+                flex = emit_flex_column(field, spacing, anchor_margins(node))
+            elif node.kind == "RowLayout":
+                geom = [
+                    f"    lv_obj_set_width(ui->{field}, LV_PCT(100));",
+                    f"    lv_obj_set_height(ui->{field}, LV_SIZE_CONTENT);",
+                ]
+                flex = emit_flex_row(field, spacing)
+            else:
+                geom = [f"    lv_obj_set_width(ui->{field}, LV_PCT(100));"]
+                flex = emit_flex_column(field, spacing, (0, 0, 0, 0))
+        else:
+            geom = [
+                f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
+                f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+            ]
+            flex = []
         lines = [
             f"    ui->{field} = lv_obj_create({parent});",
             f"    lv_obj_remove_style_all(ui->{field});",
-            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-            f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+            *geom,
+            *flex,
             f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
         ]
         return _with_style(node, field, lines)
@@ -471,7 +523,16 @@ def _emit_node(
             node,
             field,
             emit_line_plot_create(
-                mod, node, lay, field, parent, profile, rel_x, rel_y, hover=hover_plan
+                mod,
+                node,
+                lay,
+                field,
+                parent,
+                profile,
+                rel_x,
+                rel_y,
+                hover=hover_plan,
+                responsive=responsive,
             ),
         )
 
@@ -481,8 +542,7 @@ def _emit_node(
         color = node.properties.get("color", "#ffffffff")
         lines = [
             f"    ui->{field} = lv_button_create({parent});",
-            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-            f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+            *emit_tool_button_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
             f"    lv_obj_set_style_bg_opa(ui->{field}, LV_OPA_TRANSP, 0);",
             f"    lv_obj_set_style_shadow_width(ui->{field}, 0, 0);",
             f"    lv_obj_set_style_border_width(ui->{field}, 0, 0);",

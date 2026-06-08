@@ -35,6 +35,12 @@ from .bindings_codegen import (
 )
 from .emit_context import EmitContext
 from .errors import EmitError
+from .responsive_layout import (
+    anchors_center_in,
+    anchors_fill_parent,
+    emit_pct_fill,
+    hybrid_module_responsive,
+)
 from .static_ui import _SIGNAL_EVENT, _emit_root, _handler_cb_name, _text_literal, _with_style
 from .widget_style import emit_border, image_layout, lv_font_expr
 
@@ -93,12 +99,20 @@ def _emit_arc(
     field: str,
     parent: str,
     plan: ArcGaugePlan,
+    *,
+    responsive: bool = False,
 ) -> list[str]:
     r = lay.rect
+    geom = [f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});"]
+    if responsive and (lay.align_center or anchors_center_in(node)):
+        geom.append(
+            f"    lv_obj_align(ui->{field}, LV_ALIGN_CENTER, 0, {lay.align_center_offset_y});"
+        )
+    else:
+        geom.append(f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});")
     return [
         f"    ui->{field} = lv_arc_create({parent});",
-        f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-        f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
+        *geom,
         *emit_arc_gauge_init(f"ui->{field}", plan),
     ]
 
@@ -159,13 +173,21 @@ def _emit_rectangle(
     lay: NodeLayout,
     field: str,
     parent: str,
+    *,
+    responsive: bool = False,
 ) -> list[str]:
     r = lay.rect
+    if responsive and anchors_fill_parent(node):
+        geom = emit_pct_fill(field)
+    else:
+        geom = [
+            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
+            f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
+        ]
     lines = [
         f"    ui->{field} = lv_obj_create({parent});",
         f"    lv_obj_remove_style_all(ui->{field});",
-        f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-        f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
+        *geom,
     ]
     if "color" in node.properties:
         lines += [
@@ -186,13 +208,21 @@ def _emit_mouse_area(
     field: str,
     parent: str,
     handler_ids: set[str],
+    *,
+    responsive: bool = False,
 ) -> list[str]:
-    r = lay.rect
+    if responsive and anchors_fill_parent(node):
+        geom = emit_pct_fill(field)
+    else:
+        r = lay.rect
+        geom = [
+            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
+            f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
+        ]
     lines = [
         f"    ui->{field} = lv_obj_create({parent});",
         f"    lv_obj_remove_style_all(ui->{field});",
-        f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-        f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
+        *geom,
         f"    lv_obj_add_flag(ui->{field}, LV_OBJ_FLAG_CLICKABLE);",
     ]
     if node.id:
@@ -259,7 +289,8 @@ def emit_hybrid(
     for prop in bound_props:
         fields.append(struct_field_decl(prop))
 
-    create.extend(_emit_root(mod.nodes[mod.root], layouts[mod.root], names[mod.root], profile))
+    responsive = hybrid_module_responsive(mod)
+    create.extend(_emit_root(mod.nodes[mod.root], layouts[mod.root], names[mod.root], profile, responsive))
 
     for idx, node in enumerate(mod.nodes):
         if idx == mod.root:
@@ -269,23 +300,36 @@ def emit_hybrid(
         parent = f"ui->{names[node.parent]}"
 
         if node.kind == "Rectangle":
-            create.extend(_emit_rectangle(node, lay, field, parent))
+            create.extend(_emit_rectangle(node, lay, field, parent, responsive=responsive))
         elif node.kind == "Arc":
             initial = _arc_initial(node, mod, consumers)
             plan = _plan_arc(node, initial)
             arc_plans[idx] = plan
             if idx in arc_scale_fields:
-                create.extend(
-                    emit_arc_scale(node, lay, arc_scale_fields[idx], parent, plan)
-                )
-            create.extend(_emit_arc(node, lay, field, parent, plan))
+                scale_lines = emit_arc_scale(node, lay, arc_scale_fields[idx], parent, plan)
+                if responsive and (lay.align_center or anchors_center_in(node)):
+                    scale_lines = [line for line in scale_lines if "lv_obj_set_pos" not in line]
+                    scale_lines.append(
+                        f"    lv_obj_align(ui->{arc_scale_fields[idx]}, LV_ALIGN_CENTER, 0, {lay.align_center_offset_y});"
+                    )
+                create.extend(scale_lines)
+            create.extend(_emit_arc(node, lay, field, parent, plan, responsive=responsive))
         elif node.kind == "Text":
             create.extend(_emit_text_hybrid(mod, node, lay, field, parent, profile))
         elif node.kind == "Image":
             create.extend(_emit_image(node, lay, field, parent, id_by_source))
         elif node.kind == "MouseArea":
-            create.extend(_emit_mouse_area(mod, node, lay, field, parent, handler_ids))
+            create.extend(
+                _emit_mouse_area(mod, node, lay, field, parent, handler_ids, responsive=responsive)
+            )
         elif node.kind == "Item":
+            if responsive and anchors_fill_parent(node):
+                item_geom = emit_pct_fill(field)
+            else:
+                item_geom = [
+                    f"    lv_obj_set_size(ui->{field}, {lay.rect.w}, {lay.rect.h});",
+                    f"    lv_obj_set_pos(ui->{field}, {lay.rect.x}, {lay.rect.y});",
+                ]
             create.extend(
                 _with_style(
                     node,
@@ -293,8 +337,7 @@ def emit_hybrid(
                     [
                         f"    ui->{field} = lv_obj_create({parent});",
                         f"    lv_obj_remove_style_all(ui->{field});",
-                        f"    lv_obj_set_size(ui->{field}, {lay.rect.w}, {lay.rect.h});",
-                        f"    lv_obj_set_pos(ui->{field}, {lay.rect.x}, {lay.rect.y});",
+                        *item_geom,
                         f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
                     ],
                 )

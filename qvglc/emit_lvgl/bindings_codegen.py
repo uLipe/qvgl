@@ -107,7 +107,10 @@ def _emit_text_consumer(
     if prop.type == "str":
         if "sym" not in expr:
             raise EmitError("string property text binding requires sym")
-        return f"    qvgl_widget_set_text(ui->{field}, {param});"
+        return (
+            f"    qvgl_widget_set_text(ui->{field}, {param} ? {param} : \"\");\n"
+            f"    qvgl_widget_set_visible(ui->{field}, {param} != NULL && {param}[0] != '\\0');"
+        )
     if prop.type == "i32":
         if "sym" in expr:
             return (

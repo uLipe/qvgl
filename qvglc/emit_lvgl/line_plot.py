@@ -133,12 +133,11 @@ def emit_line_plot_hover_fields(plan: LinePlotHoverPlan) -> list[str]:
 
 
 def _cursor_idle_literal(mod: Module, cursor_text_prop: str | None) -> str:
-    if not cursor_text_prop:
-        return "t=\\u2014  y=\\u2014"
-    for prop in mod.module_properties:
-        if prop.name == cursor_text_prop and prop.default is not None:
-            return str(prop.default).replace("\\", "\\\\").replace('"', '\\"')
-    return "t=\\u2014  y=\\u2014"
+    if cursor_text_prop:
+        for prop in mod.module_properties:
+            if prop.name == cursor_text_prop and prop.default is not None:
+                return str(prop.default).replace("\\", "\\\\").replace('"', '\\"')
+    return ""
 
 
 def emit_line_plot_hover_callback(
@@ -313,6 +312,18 @@ def emit_line_plot_module_api(
     return header, body
 
 
+def emit_line_plot_resize_callback(mod: Module, field: str) -> str:
+    pf = f"{field}_plot"
+    return f"""static void qvgl_{mod.module}_{field}_resize_cb(lv_event_t * e)
+{{
+    if(lv_event_get_code(e) != LV_EVENT_SIZE_CHANGED) return;
+    qvgl_ui_{mod.module}_t * ui = lv_event_get_user_data(e);
+    if(!ui) return;
+    qvgl_plot_relayout(&ui->{pf});
+}}
+"""
+
+
 def emit_line_plot_create(
     mod: Module,
     node: Node,
@@ -323,9 +334,15 @@ def emit_line_plot_create(
     rel_x: int,
     rel_y: int,
     hover: LinePlotHoverPlan | None = None,
+    *,
+    responsive: bool = False,
 ) -> list[str]:
     plan = plan_line_plot(node, lay)
     r = lay.rect
+    pad_l = int(node.properties.get("padL", 52))
+    pad_r = int(node.properties.get("padR", 10))
+    pad_t = int(node.properties.get("padT", 10))
+    pad_b = int(node.properties.get("padB", 30))
     line_color = str(node.properties.get("lineColor", "#ff4fc3f7"))
     plot_bg = str(node.properties.get("plotBg", "#ff0d0d0f"))
     grid_color = str(node.properties.get("gridColor", "#ff2a2b2f"))
@@ -343,14 +360,29 @@ def emit_line_plot_create(
     chart_h = plan.chart_h
     pf = f"{field}_plot"
 
+    size_lines = (
+        [
+            f"    lv_obj_set_width(ui->{field}, LV_PCT(100));",
+            f"    lv_obj_set_flex_grow(ui->{field}, 1);",
+        ]
+        if responsive
+        else [
+            f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
+            f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+        ]
+    )
+
     lines = [
         f"    ui->{field} = lv_obj_create({parent});",
         f"    lv_obj_remove_style_all(ui->{field});",
-        f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
-        f"    lv_obj_set_pos(ui->{field}, {rel_x}, {rel_y});",
+        *size_lines,
         f"    lv_obj_set_style_bg_color(ui->{field}, {lv_color_hex_expr(plot_bg)}, 0);",
         f"    lv_obj_set_style_bg_opa(ui->{field}, LV_OPA_COVER, 0);",
         f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
+        f"    ui->{pf}.pad_l = {pad_l};",
+        f"    ui->{pf}.pad_r = {pad_r};",
+        f"    ui->{pf}.pad_t = {pad_t};",
+        f"    ui->{pf}.pad_b = {pad_b};",
         f"    ui->{pf}.chart_x = {chart_x};",
         f"    ui->{pf}.chart_y = {chart_y};",
         f"    ui->{pf}.chart_w = {chart_w};",
@@ -391,42 +423,34 @@ def emit_line_plot_create(
         ]
 
     lines += [
-        f"    {{",
-        f"        lv_obj_t * lbl = lv_label_create(ui->{field});",
-        f'        lv_label_set_text(lbl, "{x_unit}");',
-        f"        lv_obj_set_style_text_color(lbl, {lv_color_hex_expr(unit_muted)}, 0);",
-        f"        lv_obj_set_style_text_font(lbl, {unit_font}, 0);",
-        f"        lv_obj_set_pos(lbl, {chart_x + chart_w - 36}, {chart_y + chart_h + 4});",
-        f"    }}",
+        f"    ui->{pf}.x_unit_label = lv_label_create(ui->{field});",
+        f'    lv_label_set_text(ui->{pf}.x_unit_label, "{x_unit}");',
+        f"    lv_obj_set_style_text_color(ui->{pf}.x_unit_label, {lv_color_hex_expr(unit_muted)}, 0);",
+        f"    lv_obj_set_style_text_font(ui->{pf}.x_unit_label, {unit_font}, 0);",
+        f"    lv_obj_set_pos(ui->{pf}.x_unit_label, {chart_x + chart_w - 36}, {chart_y + chart_h + 4});",
     ]
     if y_unit:
         lines += [
-            f"    {{",
-            f"        lv_obj_t * lbl = lv_label_create(ui->{field});",
-            f'        lv_label_set_text(lbl, "{y_unit}");',
-            f"        lv_obj_set_style_text_color(lbl, {lv_color_hex_expr(unit_muted)}, 0);",
-            f"        lv_obj_set_style_text_font(lbl, {unit_font}, 0);",
-            f"        lv_obj_set_pos(lbl, 2, {chart_y + 6});",
-            f"    }}",
+            f"    ui->{pf}.y_unit_label = lv_label_create(ui->{field});",
+            f'    lv_label_set_text(ui->{pf}.y_unit_label, "{y_unit}");',
+            f"    lv_obj_set_style_text_color(ui->{pf}.y_unit_label, {lv_color_hex_expr(unit_muted)}, 0);",
+            f"    lv_obj_set_style_text_font(ui->{pf}.y_unit_label, {unit_font}, 0);",
+            f"    lv_obj_set_pos(ui->{pf}.y_unit_label, 2, {chart_y + 6});",
         ]
 
     lines += [
-        f"    {{",
-        f"        lv_obj_t * axis = lv_obj_create(ui->{field});",
-        f"        lv_obj_remove_style_all(axis);",
-        f"        lv_obj_set_size(axis, {chart_w}, 2);",
-        f"        lv_obj_set_pos(axis, {chart_x}, {chart_y + chart_h - 1});",
-        f"        lv_obj_set_style_bg_color(axis, {lv_color_hex_expr(axis_color)}, 0);",
-        f"        lv_obj_set_style_bg_opa(axis, LV_OPA_COVER, 0);",
-        f"    }}",
-        f"    {{",
-        f"        lv_obj_t * axis = lv_obj_create(ui->{field});",
-        f"        lv_obj_remove_style_all(axis);",
-        f"        lv_obj_set_size(axis, 2, {chart_h});",
-        f"        lv_obj_set_pos(axis, {chart_x}, {chart_y});",
-        f"        lv_obj_set_style_bg_color(axis, {lv_color_hex_expr(axis_color)}, 0);",
-        f"        lv_obj_set_style_bg_opa(axis, LV_OPA_COVER, 0);",
-        f"    }}",
+        f"    ui->{pf}.axis_bottom = lv_obj_create(ui->{field});",
+        f"    lv_obj_remove_style_all(ui->{pf}.axis_bottom);",
+        f"    lv_obj_set_size(ui->{pf}.axis_bottom, {chart_w}, 2);",
+        f"    lv_obj_set_pos(ui->{pf}.axis_bottom, {chart_x}, {chart_y + chart_h - 1});",
+        f"    lv_obj_set_style_bg_color(ui->{pf}.axis_bottom, {lv_color_hex_expr(axis_color)}, 0);",
+        f"    lv_obj_set_style_bg_opa(ui->{pf}.axis_bottom, LV_OPA_COVER, 0);",
+        f"    ui->{pf}.axis_left = lv_obj_create(ui->{field});",
+        f"    lv_obj_remove_style_all(ui->{pf}.axis_left);",
+        f"    lv_obj_set_size(ui->{pf}.axis_left, 2, {chart_h});",
+        f"    lv_obj_set_pos(ui->{pf}.axis_left, {chart_x}, {chart_y});",
+        f"    lv_obj_set_style_bg_color(ui->{pf}.axis_left, {lv_color_hex_expr(axis_color)}, 0);",
+        f"    lv_obj_set_style_bg_opa(ui->{pf}.axis_left, LV_OPA_COVER, 0);",
         f"    qvgl_plot_set_domain(&ui->{pf}, {_float_c_literal(plan.x_min)}, {_float_c_literal(plan.x_max)}, {_float_c_literal(plan.y_min)}, {_float_c_literal(plan.y_max)});",
     ]
 
@@ -455,7 +479,14 @@ def emit_line_plot_create(
             f"    lv_obj_set_style_bg_opa(ui->{field}_cross_h, LV_OPA_COVER, 0);",
             f"    lv_obj_add_flag(ui->{field}_cross_h, LV_OBJ_FLAG_HIDDEN);",
             f"    ui->{pf}.cross_h = ui->{field}_cross_h;",
+            f"    ui->{pf}.hit = ui->{field}_hit;",
             f"    lv_obj_add_event_cb(ui->{field}_hit, qvgl_{mod.module}_{field}_hover_cb, LV_EVENT_ALL, ui);",
+        ]
+
+    if responsive:
+        lines += [
+            f"    qvgl_plot_relayout(&ui->{pf});",
+            f"    lv_obj_add_event_cb(ui->{field}, qvgl_{mod.module}_{field}_resize_cb, LV_EVENT_SIZE_CHANGED, ui);",
         ]
 
     return lines

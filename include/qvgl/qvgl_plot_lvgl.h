@@ -15,10 +15,19 @@ typedef struct {
     lv_obj_t * x_labels[QVGL_PLOT_MAX_TICKS];
     lv_obj_t * y_labels[QVGL_PLOT_MAX_TICKS];
     uint8_t tick_count;
+    int16_t pad_l;
+    int16_t pad_r;
+    int16_t pad_t;
+    int16_t pad_b;
     int16_t chart_x;
     int16_t chart_y;
     int16_t chart_w;
     int16_t chart_h;
+    lv_obj_t * hit;
+    lv_obj_t * x_unit_label;
+    lv_obj_t * y_unit_label;
+    lv_obj_t * axis_bottom;
+    lv_obj_t * axis_left;
     float x_min;
     float x_max;
     float y_min;
@@ -49,6 +58,8 @@ void qvgl_plot_set_crosshair(qvgl_plot_t * plot, float t_sec, float y_val);
 void qvgl_plot_clear_crosshair(qvgl_plot_t * plot);
 
 void qvgl_plot_set_cursor(qvgl_plot_t * plot, float t_sec, float y_val);
+
+void qvgl_plot_relayout(qvgl_plot_t * plot);
 
 #ifdef __cplusplus
 }

@@ -131,3 +131,49 @@ void qvgl_plot_set_cursor(qvgl_plot_t * plot, float t_sec, float y_val)
 
     qvgl_plot_set_crosshair(plot, t_sec, y_val);
 }
+
+void qvgl_plot_relayout(qvgl_plot_t * plot)
+{
+    if(!plot || !plot->chart) return;
+
+    lv_obj_t * container = lv_obj_get_parent(plot->chart);
+    if(!container) return;
+
+    int cw = lv_obj_get_width(container);
+    int ch = lv_obj_get_height(container);
+    if(cw < plot->pad_l + plot->pad_r + 8) cw = plot->pad_l + plot->pad_r + 8;
+    if(ch < plot->pad_t + plot->pad_b + 8) ch = plot->pad_t + plot->pad_b + 8;
+
+    plot->chart_x = plot->pad_l;
+    plot->chart_y = plot->pad_t;
+    plot->chart_w = cw - plot->pad_l - plot->pad_r;
+    plot->chart_h = ch - plot->pad_t - plot->pad_b;
+    if(plot->chart_w < 1) plot->chart_w = 1;
+    if(plot->chart_h < 1) plot->chart_h = 1;
+
+    lv_obj_set_size(plot->chart, plot->chart_w, plot->chart_h);
+    lv_obj_set_pos(plot->chart, plot->chart_x, plot->chart_y);
+
+    if(plot->hit) {
+        lv_obj_set_size(plot->hit, plot->chart_w, plot->chart_h);
+        lv_obj_set_pos(plot->hit, plot->chart_x, plot->chart_y);
+    }
+
+    if(plot->axis_bottom) {
+        lv_obj_set_size(plot->axis_bottom, plot->chart_w, 2);
+        lv_obj_set_pos(plot->axis_bottom, plot->chart_x, plot->chart_y + plot->chart_h - 1);
+    }
+    if(plot->axis_left) {
+        lv_obj_set_size(plot->axis_left, 2, plot->chart_h);
+        lv_obj_set_pos(plot->axis_left, plot->chart_x, plot->chart_y);
+    }
+    if(plot->x_unit_label) {
+        int ux = plot->chart_x + plot->chart_w - 36;
+        if(ux < plot->chart_x) ux = plot->chart_x;
+        lv_obj_set_pos(plot->x_unit_label, ux, plot->chart_y + plot->chart_h + 4);
+    }
+    if(plot->y_unit_label)
+        lv_obj_set_pos(plot->y_unit_label, 2, plot->chart_y + 6);
+
+    refresh_axis_labels(plot);
+}

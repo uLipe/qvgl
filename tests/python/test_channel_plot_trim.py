@@ -26,3 +26,4 @@ def test_channel_plot_trim_emit_bindings(caps, tmp_path: Path):
     assert "qvgl_channel_plot_trim_set_cursorText" in pub
     assert "qvgl_channel_plot_trim_set_plotTitle" in pub
     assert "apply_plot_series" in ui_c
+    assert "qvgl_widget_set_visible(ui->cursor_label" in ui_c

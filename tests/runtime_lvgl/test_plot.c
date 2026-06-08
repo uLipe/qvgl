@@ -107,6 +107,36 @@ void test_plot_apply_series(void)
     QVGL_ASSERT(plot.y_max > 0.5f);
 }
 
+void test_plot_relayout(void)
+{
+    lv_obj_t * parent = lv_obj_create(lv_screen_active());
+    lv_obj_set_size(parent, 400, 240);
+    qvgl_plot_t plot = {0};
+    plot.pad_l = 40;
+    plot.pad_r = 8;
+    plot.pad_t = 8;
+    plot.pad_b = 24;
+    plot.tick_count = 2;
+    plot.chart = lv_chart_create(parent);
+    plot.x_labels[0] = lv_label_create(parent);
+    plot.x_labels[1] = lv_label_create(parent);
+    plot.y_labels[0] = lv_label_create(parent);
+    plot.y_labels[1] = lv_label_create(parent);
+    plot.series = lv_chart_add_series(plot.chart, lv_color_hex(0x4fc3f7), LV_CHART_AXIS_PRIMARY_Y);
+    plot.x_unit_label = lv_label_create(parent);
+    plot.axis_bottom = lv_obj_create(parent);
+    plot.axis_left = lv_obj_create(parent);
+    plot.x_min = 0.0f;
+    plot.x_max = 5.0f;
+    plot.y_min = -1.0f;
+    plot.y_max = 1.0f;
+
+    qvgl_plot_relayout(&plot);
+    QVGL_ASSERT(plot.chart_w > 300);
+    QVGL_ASSERT(plot.chart_h > 180);
+    QVGL_ASSERT(lv_obj_get_width(plot.axis_bottom) == plot.chart_w);
+}
+
 void test_plot_clear_crosshair(void)
 {
     lv_obj_t * parent = lv_obj_create(lv_screen_active());

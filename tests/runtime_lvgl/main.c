@@ -12,6 +12,7 @@ void test_plot_set_points(void);
 void test_plot_set_domain_labels(void);
 void test_plot_set_cursor(void);
 void test_plot_apply_series(void);
+void test_plot_relayout(void);
 void test_plot_clear_crosshair(void);
 void test_bound_setters_title(void);
 
@@ -31,6 +32,7 @@ int main(void)
     QVGL_TEST_RUN(test_plot_set_domain_labels);
     QVGL_TEST_RUN(test_plot_set_cursor);
     QVGL_TEST_RUN(test_plot_apply_series);
+    QVGL_TEST_RUN(test_plot_relayout);
     QVGL_TEST_RUN(test_plot_clear_crosshair);
     QVGL_TEST_RUN(test_bound_setters_title);
 

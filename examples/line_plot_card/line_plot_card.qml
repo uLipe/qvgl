@@ -7,7 +7,7 @@ Item {
     width: 480
     height: 300
 
-    property string cursorText: "t=\u2014  y=\u2014"
+    property string cursorText: ""
 
     Rectangle {
         anchors.fill: parent
