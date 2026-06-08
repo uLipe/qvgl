@@ -32,6 +32,18 @@ void app_on_plot_close(void)
 {
 }
 
+void app_on_gain_moved(void)
+{
+}
+
+void app_on_output_toggled(void)
+{
+}
+
+void app_on_mute_toggled(void)
+{
+}
+
 typedef struct {
     char name[64];
     char value[128];

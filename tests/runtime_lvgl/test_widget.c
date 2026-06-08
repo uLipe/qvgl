@@ -51,3 +51,22 @@ void test_widget_arc_value(void)
     QVGL_ASSERT(lv_arc_get_value(arc) == 20);
     QVGL_ASSERT(qvgl_widget_arc_value_for(arc, 0.0f, -0.7f, 2.0f) == 0);
 }
+
+void test_widget_slider_value(void)
+{
+    lv_obj_t * slider = lv_slider_create(lv_screen_active());
+    lv_slider_set_range(slider, 0, 1000);
+    qvgl_widget_set_slider_value(slider, 0.5f, 0.0f, 1.0f);
+    QVGL_ASSERT(lv_slider_get_value(slider) == 500);
+    qvgl_widget_set_slider_value(slider, 1.0f, 0.0f, 1.0f);
+    QVGL_ASSERT(lv_slider_get_value(slider) == 1000);
+}
+
+void test_widget_checked(void)
+{
+    lv_obj_t * sw = lv_switch_create(lv_screen_active());
+    qvgl_widget_set_checked(sw, true);
+    QVGL_ASSERT(lv_obj_has_state(sw, LV_STATE_CHECKED));
+    qvgl_widget_set_checked(sw, false);
+    QVGL_ASSERT(!lv_obj_has_state(sw, LV_STATE_CHECKED));
+}

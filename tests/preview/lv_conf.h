@@ -25,6 +25,11 @@
 #define LV_USE_SCALE                1
 #define LV_USE_ANIM                 1
 #define LV_USE_LABEL                1
+#define LV_USE_BUTTON               1
+#define LV_USE_SLIDER               1
+#define LV_USE_SWITCH               1
+#define LV_USE_CHECKBOX             1
+#define LV_USE_CHART                1
 #define LV_USE_IMAGE                1
 #define LV_USE_LODEPNG              1
 

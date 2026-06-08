@@ -65,6 +65,8 @@ def test_qvglc_run_cli_pass_examples(case: dict, build_dir: Path):
         extra = ["--set", "value=42"]
     elif case["id"] == "arc_animated":
         extra = ["--set", "level=50"]
+    elif case["id"] == "controls_inputs":
+        extra = ["--set", "gain=0.75", "--set", "outputEnabled=true", "--set", "mute=false"]
     r = _run_cmd(
         [
             str(qml.relative_to(ROOT)),

@@ -48,6 +48,18 @@ types:
     extends: Item
     properties: [text, color, font.pixelSize, enabled]
     signals: [clicked]
+  Slider:
+    extends: Item
+    properties: [value, from, to, stepSize]
+    signals: [moved, pressed, released]
+  Switch:
+    extends: Item
+    properties: [checked, text]
+    signals: [clicked, pressed, released]
+  CheckBox:
+    extends: Item
+    properties: [checked, text, color, font.pixelSize]
+    signals: [clicked, pressed, released]
   LinePlot:
     extends: Item
     properties: [lineColor, plotBg, gridColor, axisColor, labelColor, unitMutedColor, gridDiv, xMin, xMax, yMin, yMax, padL, padR, padT, padB, xUnit, yUnit, hoverEnabled]

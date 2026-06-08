@@ -19,6 +19,9 @@ int32_t qvgl_widget_arc_value_for(lv_obj_t * arc, float value, float vmin, float
 void qvgl_widget_set_arc_i32(lv_obj_t * arc, int32_t value);
 void qvgl_widget_set_arc_value(lv_obj_t * arc, float value, float vmin, float vmax);
 
+void qvgl_widget_set_checked(lv_obj_t * obj, bool checked);
+void qvgl_widget_set_slider_value(lv_obj_t * slider, float value, float vmin, float vmax);
+
 #ifdef __cplusplus
 }
 #endif

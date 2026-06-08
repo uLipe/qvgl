@@ -4,6 +4,7 @@ from typing import Any
 
 from qvglc.emit_lvgl.arc_anim import emit_arc_value_update
 from qvglc.emit_lvgl.arc_gauge import ArcGaugePlan
+from qvglc.emit_lvgl.slider import SliderEmitPlan, emit_slider_value_update
 from qvglc.ir.model import Module, ModuleProperty
 
 from .errors import EmitError
@@ -138,14 +139,22 @@ def _emit_consumer(
     field: str,
     param: str,
     arc_plans: dict[int, ArcGaugePlan],
+    slider_plans: dict[int, SliderEmitPlan],
 ) -> str:
     if key == "value":
         if prop.type not in ("f32", "f64"):
             raise EmitError(f"binding key value requires real property, got {prop.type!r}")
+        slider_plan = slider_plans.get(idx)
+        if slider_plan is not None:
+            return emit_slider_value_update(f"ui->{field}", param, slider_plan)
         plan = arc_plans.get(idx)
         if plan is None:
-            raise EmitError(f"binding on non-arc node index {idx}")
+            raise EmitError(f"binding on non-arc/slider node index {idx}")
         return emit_arc_value_update(f"ui->{field}", param, plan)
+    if key == "checked":
+        if prop.type != "bool":
+            raise EmitError(f"binding key checked requires bool property, got {prop.type!r}")
+        return f"    qvgl_widget_set_checked(ui->{field}, {param});"
     if key == "text":
         return _emit_text_consumer(prop, field, param, expr)
     if key == "visible":
@@ -165,9 +174,11 @@ def emit_setter_body(
     consumers: list[tuple[int, str, dict[str, Any]]],
     field_names: dict[int, str],
     arc_plans: dict[int, ArcGaugePlan],
+    slider_plans: dict[int, SliderEmitPlan] | None = None,
 ) -> str:
     ctype, _ = _C_PARAM[prop.type]
     param = prop.name
+    sliders = slider_plans or {}
     lines: list[str] = []
     if prop.type == "str":
         lines.append(f'    lv_snprintf(ui->{param}, sizeof(ui->{param}), "%s", {param} ? {param} : "");')
@@ -175,7 +186,7 @@ def emit_setter_body(
         lines.append(f"    ui->{param} = {param};")
     for idx, key, expr in consumers:
         field = field_names[idx]
-        lines.append(_emit_consumer(prop, idx, key, expr, field, param, arc_plans))
+        lines.append(_emit_consumer(prop, idx, key, expr, field, param, arc_plans, sliders))
     body = "\n".join(lines)
     return f"""void qvgl_{mod.module}_set_{prop.name}(qvgl_ui_{mod.module}_t * ui, {ctype} {param})
 {{

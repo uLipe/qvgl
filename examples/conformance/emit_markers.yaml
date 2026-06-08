@@ -45,6 +45,14 @@ controls_card:
   - lv_button_create
   - lv_color_hex(0xe0e0e0)
 
+controls_inputs:
+  - lv_slider_create
+  - lv_switch_create
+  - lv_checkbox_create
+  - qvgl_controls_inputs_set_gain
+  - qvgl_widget_set_slider_value
+  - qvgl_widget_set_checked
+
 line_plot_card:
   - qvgl_plot_relayout
   - qvgl_plot_t

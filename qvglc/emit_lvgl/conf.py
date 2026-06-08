@@ -60,6 +60,18 @@ def emit_qvgl_lv_conf(
 #define LV_USE_BUTTON 1
 #endif
 
+#ifndef LV_USE_SLIDER
+#define LV_USE_SLIDER 1
+#endif
+
+#ifndef LV_USE_SWITCH
+#define LV_USE_SWITCH 1
+#endif
+
+#ifndef LV_USE_CHECKBOX
+#define LV_USE_CHECKBOX 1
+#endif
+
 #ifndef LV_USE_CHART
 #define LV_USE_CHART 1
 #endif
@@ -89,6 +101,18 @@ def emit_qvgl_lvgl_config(*, fonts: set[str], use_image: bool) -> str:
         "    default y",
         "",
         "config LV_USE_BUTTON",
+        "    bool",
+        "    default y",
+        "",
+        "config LV_USE_SLIDER",
+        "    bool",
+        "    default y",
+        "",
+        "config LV_USE_SWITCH",
+        "    bool",
+        "    default y",
+        "",
+        "config LV_USE_CHECKBOX",
         "    bool",
         "    default y",
         "",

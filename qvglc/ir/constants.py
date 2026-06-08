@@ -16,6 +16,9 @@ NODE_KIND = {
     "ColumnLayout": 9,
     "RowLayout": 10,
     "LinePlot": 11,
+    "Slider": 12,
+    "Switch": 13,
+    "CheckBox": 14,
 }
 
 NODE_KIND_NAME = {v: k for k, v in NODE_KIND.items()}

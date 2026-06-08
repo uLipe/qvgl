@@ -65,6 +65,11 @@ cases:
     profile: profiles/ultralite_v1.yaml
     tier: pass
 
+  - id: controls_inputs
+    qml: examples/controls_inputs/controls_inputs.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
   - id: line_plot_card
     qml: examples/line_plot_card/line_plot_card.qml
     profile: profiles/ultralite_v1.yaml

@@ -39,6 +39,12 @@ from .line_plot import (
     plan_line_plot,
     plan_line_plot_hover,
 )
+from .slider import (
+    SliderEmitPlan,
+    emit_slider_create,
+    plan_slider,
+    slider_initial,
+)
 from .responsive_layout import (
     anchor_margins,
     anchors_fill_parent,
@@ -94,6 +100,7 @@ _SIGNAL_EVENT = {
     "clicked": "LV_EVENT_CLICKED",
     "pressed": "LV_EVENT_PRESSED",
     "released": "LV_EVENT_RELEASED",
+    "moved": "LV_EVENT_VALUE_CHANGED",
 }
 
 
@@ -158,6 +165,7 @@ def emit_static(
     cursor_text_prop = cursor_text_property(mod) if hover_plan else None
     responsive = module_uses_responsive_layout(mod)
     plot_plans: list[tuple[str, object]] = []
+    slider_plans: dict[int, SliderEmitPlan] = {}
 
     fields: list[str] = []
     create: list[str] = []
@@ -191,6 +199,12 @@ def emit_static(
     for idx, node in enumerate(mod.nodes):
         if idx == mod.root:
             continue
+        if node.kind == "Slider":
+            slider_plans[idx] = plan_slider(node, slider_initial(node, mod, consumers))
+
+    for idx, node in enumerate(mod.nodes):
+        if idx == mod.root:
+            continue
         lay = layouts[idx]
         rx, ry = _rel_pos(mod, layouts, idx)
         parent = f"ui->{names[node.parent]}"
@@ -211,6 +225,8 @@ def emit_static(
                 ry,
                 hover_plan,
                 responsive,
+                slider_plans,
+                mod.handlers,
             )
         )
 
@@ -236,7 +252,7 @@ def emit_static(
     for prop in bound_props:
         setter_decls.append(setter_decl(mod, prop))
         setter_fns.append(
-            emit_setter_body(mod, prop, consumers[prop.name], names, {})
+            emit_setter_body(mod, prop, consumers[prop.name], names, {}, slider_plans)
         )
         init_setters.append(f"    qvgl_{mod.module}_set_{prop.name}(ui, ui->{prop.name});")
 
@@ -407,6 +423,8 @@ def _emit_node(
     rel_y: int,
     hover_plan,
     responsive: bool,
+    slider_plans: dict[int, SliderEmitPlan],
+    handlers: list,
 ) -> list[str]:
     r = lay.rect
     if node.kind == "Rectangle":
@@ -535,6 +553,67 @@ def _emit_node(
                 responsive=responsive,
             ),
         )
+
+    if node.kind == "Slider":
+        plan = slider_plans[idx]
+        handler_cb = None
+        if node.id:
+            for h in handlers:
+                if h.node == node.id and h.signal == "moved":
+                    handler_cb = _handler_cb_name(mod, field, h.signal)
+                    break
+        if responsive and parent_node.kind == "ColumnLayout":
+            geom = [
+                f"    lv_obj_set_width(ui->{field}, LV_PCT(100));",
+                f"    lv_obj_set_height(ui->{field}, {max(r.h, 40)});",
+            ]
+        else:
+            geom = emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y)
+        return _with_style(
+            node,
+            field,
+            emit_slider_create(field, parent, plan, geom, handler_cb=handler_cb),
+        )
+
+    if node.kind == "Switch":
+        checked = bool(node.properties.get("checked", False))
+        if isinstance(node.properties.get("checked"), dict):
+            checked = False
+        lines = [
+            f"    ui->{field} = lv_switch_create({parent});",
+            *emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
+        ]
+        if checked:
+            lines.append(f"    lv_obj_add_state(ui->{field}, LV_STATE_CHECKED);")
+        if node.id and node.id in handler_ids:
+            cb_name = _handler_cb_name(mod, field, "clicked")
+            lines.append(
+                f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, LV_EVENT_CLICKED, NULL);"
+            )
+        return _with_style(node, field, lines)
+
+    if node.kind == "CheckBox":
+        label = _text_literal(node, mod)
+        checked = bool(node.properties.get("checked", False))
+        if isinstance(node.properties.get("checked"), dict):
+            checked = False
+        color = node.properties.get("color", "#ffffffff")
+        px = int(node.properties.get("font.pixelSize", 14))
+        lines = [
+            f"    ui->{field} = lv_checkbox_create({parent});",
+            *emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
+            f'    lv_checkbox_set_text(ui->{field}, "{label}");',
+            f"    lv_obj_set_style_text_color(ui->{field}, {lv_color_hex_expr(str(color))}, 0);",
+            f"    lv_obj_set_style_text_font(ui->{field}, {lv_font_expr(profile, px)}, 0);",
+        ]
+        if checked:
+            lines.append(f"    lv_obj_add_state(ui->{field}, LV_STATE_CHECKED);")
+        if node.id and node.id in handler_ids:
+            cb_name = _handler_cb_name(mod, field, "clicked")
+            lines.append(
+                f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, LV_EVENT_CLICKED, NULL);"
+            )
+        return _with_style(node, field, lines)
 
     if node.kind == "ToolButton":
         px = int(node.properties.get("font.pixelSize", 14))

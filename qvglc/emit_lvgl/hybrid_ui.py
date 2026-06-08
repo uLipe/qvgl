@@ -367,7 +367,7 @@ def emit_hybrid(
     for prop in bound_props:
         setter_decls.append(setter_decl(mod, prop))
         setter_fns.append(
-            emit_setter_body(mod, prop, consumers[prop.name], names, arc_plans)
+            emit_setter_body(mod, prop, consumers[prop.name], names, arc_plans, {})
         )
         init_setters.append(f"    qvgl_{mod.module}_set_{prop.name}(ui, ui->{prop.name});")
 
