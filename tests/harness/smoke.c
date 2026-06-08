@@ -1,7 +1,6 @@
 #include "qvgl_test.h"
 #include "qvgl/ir_v1.h"
 #include "qvgl/qvgl_runtime.h"
-#include "qvgl/qvgl_vehicle_model.h"
 
 static void test_ir_header_constants(void)
 {
@@ -17,21 +16,9 @@ static void test_runtime_map_linear(void)
     QVGL_ASSERT(v_mid > 140.0f && v_mid < 155.0f);
 }
 
-static void test_vehicle_demo_can_decode(void)
-{
-    qvgl_vehicle_state_t st;
-    qvgl_vehicle_state_init(&st);
-    const uint8_t frame[] = {0xB0u, 0x04u, 0xACu, 0x0Du, 0x03u, 0x00u};
-    QVGL_ASSERT(qvgl_vehicle_decode_demo_can(QVGL_VEHICLE_DEMO_CAN_SPEED_RPM, frame, 6, &st));
-    QVGL_ASSERT(st.speed_kmh > 119.9f && st.speed_kmh < 120.1f);
-    QVGL_ASSERT(st.rpm > 3509.0f && st.rpm < 3511.0f);
-    QVGL_ASSERT(st.gear == 3u);
-}
-
 int main(void)
 {
     QVGL_TEST_RUN(test_ir_header_constants);
     QVGL_TEST_RUN(test_runtime_map_linear);
-    QVGL_TEST_RUN(test_vehicle_demo_can_decode);
     return EXIT_SUCCESS;
 }

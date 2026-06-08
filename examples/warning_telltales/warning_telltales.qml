@@ -1,11 +1,17 @@
 import QtQuick 2.15
 
 Rectangle {
+    width: 480
+    height: 80
     color: "#1a1a2e"
+
+    property bool oilVisible: false
+    property bool coolantVisible: false
+    property bool absVisible: false
 
     Image {
         id: oilLamp
-        visible: false
+        visible: oilVisible
         source: "assets/dot_red.png"
         x: 24
         y: 24
@@ -15,7 +21,7 @@ Rectangle {
     }
     Image {
         id: coolantLamp
-        visible: false
+        visible: coolantVisible
         source: "assets/dot_amber.png"
         x: 64
         y: 24
@@ -24,7 +30,7 @@ Rectangle {
     }
     Image {
         id: absLamp
-        visible: false
+        visible: absVisible
         source: "assets/dot_green.png"
         x: 104
         y: 24
