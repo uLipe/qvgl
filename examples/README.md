@@ -12,6 +12,10 @@ Generic reference UIs — each has `*.qml`, optional `golden/*.qvglir.json`, and
 | [icon_row](icon_row/) | embedded PNG `Image` row |
 | [static_card](static_card/) | static layout + border |
 | [themed_chip](themed_chip/) | `Theme.*` compile-time tokens |
+| [warning_telltales](warning_telltales/) | bound `bool` → `Image.visible` |
+| [controls_card](controls_card/) | Controls + layouts |
+| [line_plot_card](line_plot_card/) | `LinePlot` + hover cursor |
+| [channel_plot_trim](channel_plot_trim/) | trim reference for MCU full-screen |
 
 ```bash
 qvglc run examples/<name>/<name>.qml

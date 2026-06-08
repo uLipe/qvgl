@@ -1,28 +1,27 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-import yaml
 
+from conformance_util import KNOWN_TIERS, load_manifest
+from qvglc.conformance import validate_manifest
 from qvglc.parser import QvglDiagnostic, check_qml, load_profile
 
+from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "examples/conformance/manifest.yaml"
 
 
-def _load_cases() -> list[dict]:
-    data = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
-    return data["cases"]
+def test_manifest_schema_valid():
+    errors = validate_manifest(load_manifest())
+    assert not errors, "\n".join(errors)
 
 
-@pytest.mark.parametrize("case", _load_cases(), ids=lambda c: c["id"])
+@pytest.mark.parametrize("case", load_manifest(), ids=lambda c: c["id"])
 def test_conformance_tier(case: dict):
+    assert case["tier"] in KNOWN_TIERS
     qml = ROOT / case["qml"]
     profile = load_profile(ROOT / case["profile"])
     tier = case["tier"]
-
-    assert qml.is_file(), f"missing {qml}"
 
     if tier == "reject":
         with pytest.raises(QvglDiagnostic) as exc:
@@ -33,14 +32,3 @@ def test_conformance_tier(case: dict):
         return
 
     check_qml(qml, profile)
-
-    if tier == "pass":
-        return
-
-    if tier == "partial":
-        return
-
-    if tier == "reference":
-        return
-
-    pytest.fail(f"unknown tier {tier!r}")

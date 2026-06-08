@@ -1,0 +1,53 @@
+# Required substrings in generated ui_<module>.c (and optionally qvgl_<module>.h via files:).
+# Keys match manifest case ids.
+
+mcu_minimal:
+  - lv_obj_create
+
+turbo_gauge:
+  - lv_arc_create
+  - qvgl_turbo_gauge_set_pressure
+  - LV_PCT(100)
+
+gauge_ticks:
+  - lv_arc_create
+  - lv_scale_create
+  - LV_ALIGN_CENTER
+
+static_card:
+  - lv_obj_create
+  - lv_label_create
+
+bound_label:
+  - qvgl_bound_label_set_value
+
+bound_props_card:
+  - qvgl_bound_props_card_set_
+
+arc_animated:
+  - lv_anim_start
+  - lv_arc_create
+
+icon_row:
+  - lv_image_create
+
+themed_chip:
+  - lv_label_create
+
+controls_card:
+  - LV_LAYOUT_FLEX
+  - lv_button_create
+
+line_plot_card:
+  - qvgl_plot_relayout
+  - qvgl_plot_t
+  - LV_PCT(100)
+
+channel_plot_trim:
+  - qvgl_plot_relayout
+  - LV_LAYOUT_FLEX
+  - qvgl_widget_set_visible(ui->cursor_label
+
+warning_telltales:
+  - qvgl_warning_telltales_set_oilVisible
+  - lv_image_create

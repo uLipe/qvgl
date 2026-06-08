@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from qvglc.conformance import run_conformance_checks
 from qvglc.coverage import coverage_report
 from qvglc.emit_lvgl import EmitError, emit_module
 from qvglc.parser import QvglDiagnostic, check_qml, compile_qml, default_profile_path, load_profile
@@ -77,6 +78,17 @@ def main(argv: list[str] | None = None) -> int:
     p_coverage = sub.add_parser("coverage", help="Report whether QML is supported by profile")
     p_coverage.add_argument("input", type=Path)
     p_coverage.add_argument("--profile", type=Path, default=None)
+
+    p_conformance = sub.add_parser(
+        "conformance",
+        help="Run manifest.yaml check tiers (smoke/pass/reference/reject)",
+    )
+    p_conformance.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="Path to manifest.yaml (default: examples/conformance/manifest.yaml)",
+    )
 
     p_run = sub.add_parser("run", help="Compile QML and open SDL preview (one-shot E2E)")
     p_run.add_argument("input", type=Path, help="Input .qml")
@@ -185,6 +197,15 @@ def main(argv: list[str] | None = None) -> int:
             ok, msg = coverage_report(args.input, prof)
             print(msg)
             return 0 if ok else 1
+
+        if args.cmd == "conformance":
+            code, errors = run_conformance_checks(args.manifest)
+            if errors:
+                for line in errors:
+                    print(line, file=sys.stderr)
+                return code
+            print("ok: conformance manifest")
+            return 0
 
         if args.cmd == "run":
             if args.input.suffix != ".qml":

@@ -1,14 +1,29 @@
 # Machine-checkable conformance tiers — see docs/11-qml-conformance-matrix.md
-# tier: pass | partial | reject
-# pass: qvglc check must succeed
-# partial: check passes; visual/emit gaps documented in matrix
-# reject: check must fail with expect_code
+#
+# tier:
+#   smoke     — fast CI: qvglc check + emit markers (emit_markers.yaml)
+#   pass      — full supported example; check + emit markers
+#   partial   — check passes; documented gaps in matrix
+#   reference — trim/parity target; check + emit markers
+#   reject    — check must fail with expect_code
+#
+# Emit proof: examples/conformance/emit_markers.yaml (keys = id)
 
 cases:
   - id: mcu_minimal
     qml: examples/mcu_minimal/minimal.qml
     profile: profiles/ultralite_v1.yaml
-    tier: pass
+    tier: smoke
+
+  - id: static_card
+    qml: examples/static_card/static_card.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: smoke
+
+  - id: bound_label
+    qml: examples/bound_label/bound_label.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: smoke
 
   - id: turbo_gauge
     qml: examples/turbo_gauge/turbo_gauge.qml
@@ -17,16 +32,6 @@ cases:
 
   - id: gauge_ticks
     qml: examples/gauge_ticks/gauge_ticks.qml
-    profile: profiles/ultralite_v1.yaml
-    tier: pass
-
-  - id: static_card
-    qml: examples/static_card/static_card.qml
-    profile: profiles/ultralite_v1.yaml
-    tier: pass
-
-  - id: bound_label
-    qml: examples/bound_label/bound_label.qml
     profile: profiles/ultralite_v1.yaml
     tier: pass
 
@@ -57,6 +62,11 @@ cases:
 
   - id: line_plot_card
     qml: examples/line_plot_card/line_plot_card.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: warning_telltales
+    qml: examples/warning_telltales/warning_telltales.qml
     profile: profiles/ultralite_v1.yaml
     tier: pass
 
