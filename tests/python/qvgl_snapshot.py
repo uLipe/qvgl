@@ -21,7 +21,6 @@ def dump_preview_frame(
     out_png: Path,
     *,
     prop_sets: list[str] | None = None,
-    can_frames: list[str] | None = None,
     frames: int = 5,
     cwd: Path | None = None,
 ) -> None:
@@ -37,8 +36,6 @@ def dump_preview_frame(
     ]
     for item in prop_sets or []:
         cmd.extend(["--set", item])
-    for item in can_frames or []:
-        cmd.extend(["--can", item])
 
     env = os.environ.copy()
     env.setdefault("SDL_VIDEODRIVER", "dummy")

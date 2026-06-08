@@ -21,4 +21,11 @@ Item {
         font.pixelSize: 24
         horizontalAlignment: Text.AlignHCenter
     }
+
+    Rectangle {
+        opacity: 0
+        width: 1
+        height: 1
+        color: "#000000"
+    }
 }

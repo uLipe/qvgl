@@ -14,7 +14,7 @@ _FONT_DEFINES = {
 def collect_required_fonts(mod: Module, profile: Profile) -> set[str]:
     fonts: set[str] = set()
     for node in mod.nodes:
-        if node.kind == "Text":
+        if node.kind in ("Text", "ToolButton"):
             px = int(node.properties.get("font.pixelSize", 14))
             fonts.add(profile.font_for_pixel_size(px))
     if not fonts:
@@ -56,6 +56,14 @@ def emit_qvgl_lv_conf(
 #define LV_USE_LABEL 1
 #endif
 
+#ifndef LV_USE_BUTTON
+#define LV_USE_BUTTON 1
+#endif
+
+#ifndef LV_USE_CHART
+#define LV_USE_CHART 1
+#endif
+
 #ifndef LV_USE_SCALE
 #define LV_USE_SCALE 1
 #endif
@@ -77,6 +85,14 @@ def emit_qvgl_lvgl_config(*, fonts: set[str], use_image: bool) -> str:
         "    default y",
         "",
         "config LV_USE_LABEL",
+        "    bool",
+        "    default y",
+        "",
+        "config LV_USE_BUTTON",
+        "    bool",
+        "    default y",
+        "",
+        "config LV_USE_CHART",
         "    bool",
         "    default y",
         "",

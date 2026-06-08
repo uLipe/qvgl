@@ -62,8 +62,8 @@ def run_qml_preview(
     headless: bool = False,
     pressure: float | None = None,
     prop_sets: list[str] | None = None,
-    can_frames: list[str] | None = None,
     loop_frames: int = 0,
+    plot_animate: bool = False,
     exit_after: bool = False,
 ) -> int:
     from qvglc.emit_lvgl import emit_module
@@ -81,28 +81,20 @@ def run_qml_preview(
     caps = probe_lvgl(lvgl_path)
     emit_module(mod, caps, gen_dir, asset_root=qml_path.parent)
 
-    from qvglc.vehicle import maybe_emit_vehicle_bind, prop_sets_from_can_args
-
-    for p in maybe_emit_vehicle_bind(qml_path, gen_dir):
-        pass
-
     sets: list[str] = list(prop_sets or [])
-    bindings_path = qml_path.parent / "vehicle_bindings.yaml"
-    if can_frames and bindings_path.is_file():
-        sets.extend(prop_sets_from_can_args(can_frames, bindings_path))
 
     preview_bin = ensure_preview_built(build_dir, gen_dir, lvgl_path)
     cmd = [str(preview_bin), "--gen-dir", str(gen_dir)]
     if headless:
         cmd.append("--headless")
-    for item in can_frames or []:
-        cmd.extend(["--can", item])
     for item in sets:
         cmd.extend(["--set", item])
     if pressure is not None:
         cmd.extend(["--pressure", str(pressure)])
     if loop_frames:
         cmd.extend(["--loop-frames", str(loop_frames)])
+    if plot_animate:
+        cmd.append("--plot-animate")
     if exit_after:
         cmd.append("--exit")
 

@@ -3,56 +3,57 @@
 ## End-to-end flow
 
 ```text
-┌─────────────┐     ┌──────────┐     ┌─────────┐     ┌──────────────┐
-│  .qml file  │────▶│  Front   │────▶│ Middle  │────▶│   Backend    │
-│ (Qt Creator)│     │ parse +  │     │ layout +│     │ emit LVGL    │
-│             │     │ sema     │     │ bind    │     │ + conf frag  │
-└─────────────┘     └────┬─────┘     └────┬────┘     └──────┬───────┘
-                         │                │                  │
-                         ▼                ▼                  ▼
-                    Document AST    qvglir (binary)    ui.c / ui.h
-                                    [optional .json]    qvgl_lv_conf.h
-                                                        qvgl_runtime (link)
+┌─────────────┐     ┌──────────────┐     ┌─────────┐     ┌────────────────────┐
+│  .qml file  │────▶│ qvglc/parser │────▶│ layout  │────▶│ qvglc/emit_lvgl    │
+│             │     │ lex parse    │     │ anchors │     │ static | hybrid UI │
+│             │     │ sema IR build│     │         │     │ assets preview shim│
+└─────────────┘     └──────┬───────┘     └────┬────┘     └─────────┬──────────┘
+                           │                  │                    │
+                           ▼                  ▼                    ▼
+                      Module (IR)        NodeLayout[]         ui_*.c/h
+                      .qvglir binary                          qvgl_*.h (if bound)
 ```
 
 ## Stages
 
-### Front (`lib/parser`, `lib/sema`)
+### Front (`qvglc/parser`)
 
-- Lex/parse QML object tree for the active **profile**.
-- Resolve `id`, types, allowed properties.
-- Lower to **IR v1** (canonical binary tree).
-- Reject unsupported constructs with profile-aware diagnostics.
+Lexer, parser, sema against **`ultralite_v1`**, IR builder. Rejects unsupported QML with stable `DiagnosticCode`.
 
-### Middle (`lib/layout`, `lib/bind`)
+Special lowering: `NumberAnimation on value` (Arc only) → `valueAnimationDuration`; `Theme.*` → compile-time colors.
 
-- Resolve **anchors subset** and implicit size where possible at compile time.
-- Build **binding graph** (which IR properties depend on which symbols).
-- Mark nodes that need **runtime observers** vs fully static init.
+### Middle (`qvglc/layout`)
 
-### Backend (`lib/emit_lvgl`, `lib/lvgl_probe`)
+Compile-time anchor resolver → `Rect` per node.
 
-- Input: IR + `--lvgl-path` capability table.
-- Output:
-  - `ui_<name>.c` / `ui_<name>.h` — `lv_obj` tree, `lv_style_t`, create API
-  - `qvgl_<name>.h` — public setters / getters for bound properties
-  - `qvgl_lv_conf.h` / `qvgl_lvgl.config` — minimum LVGL options
-  - `qvgl_sources.cmake` — list of generated sources for the app
+### Backend (`qvglc/emit_lvgl`)
 
-### Runtime (`runtime/qvgl_runtime.c`)
+| Mode | When | Output |
+|------|------|--------|
+| **Static** | no module properties | literals baked in `ui_*.c` |
+| **Hybrid** | `property` bindings and/or `Arc` | `qvgl_<module>_set_*()` + preview shim |
 
-- Shared math/helpers only when **≥2 modules** need the same logic.
-- Per-screen bindings, setters, and click handlers live in **generated `ui_*.c`** (self-contained).
-- Preview and MCU shell link runtime only when a helper is actually used.
+Widgets: `Rectangle`, `Text`, `Arc` (+ optional `lv_scale` ticks), `Image`, `MouseArea`, `Item`.
+
+### Runtime (layered — see [12-runtime-data-plane.md](12-runtime-data-plane.md))
+
+```text
+L0 qvgl_runtime   → math, init (no lv_obj)
+L1 qvgl_widget  → generic label/visible/opa/arc ops
+L2 qvgl_plot, qvgl_arc, … → one module per dynamic QML type
+L3 ui_*.c       → create + thin setters calling L1/L2
+```
+
+Generated setters must not duplicate LVGL mutation logic; new Ultralite/Controls dynamics extend L2 (or L1 for simple property keys).
 
 ## Profile
 
-YAML file (`profiles/ultralite_v1.yaml`) defines allowed types, properties, binding forms, and coverage rules. The CLI loads it for `validate` and `coverage`.
+Single file: `profiles/ultralite_v1.yaml` — types, properties, anchors, binding exprs, font tiers, theme color tokens, animations.
 
-## LVGL as backend (v1)
+## LVGL backend
 
-IR nodes carry **visual intent** (geometry, colors, fonts). The emitter maps to `lv_obj` + `lv_style_t`. Future backends (e.g. direct PPA scene) would consume the same IR without changing the front-end.
+IR carries visual intent; emitter targets LVGL 9 `lv_obj` + styles. Probed via `--lvgl-path`.
 
 ## Self-contained rule
 
-No link-time dependency on Qt. Reference implementations may be studied offline; all shipped code lives under `qvgl/`.
+No link-time dependency on Qt.

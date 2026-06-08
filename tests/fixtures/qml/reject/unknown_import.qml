@@ -1,4 +1,4 @@
-import QtQuick.Controls 2.15
+import espFoC.theme
 
 Item {
     width: 100

@@ -15,24 +15,19 @@ cases:
     per_channel_tolerance: 12
     max_diff_ratio: 0.04
 
-  - id: cluster_shell
-    qml: examples/cluster_shell/cluster_shell.qml
-    profile: profiles/cluster_480x272.yaml
-    per_channel_tolerance: 16
-    max_diff_ratio: 0.02
-
-  - id: instrument_cluster_static
-    qml: examples/instrument_cluster_static/instrument_cluster_static.qml
-    profile: profiles/cluster_480x272.yaml
-    per_channel_tolerance: 16
-    max_diff_ratio: 0.05
-
   - id: icon_row
     qml: examples/icon_row/icon_row.qml
     profile: profiles/ultralite_v1.yaml
     per_channel_tolerance: 16
     max_diff_ratio: 0.06
 
+  - id: line_plot_card
+    qml: examples/line_plot_card/line_plot_card.qml
+    qt_qml: examples/line_plot_card/line_plot_card_qt.qml
+    profile: profiles/ultralite_v1.yaml
+    per_channel_tolerance: 20
+    max_diff_ratio: 0.10
+
 # Deferred (not stock QtQuick):
-# - turbo_gauge, cluster_dual_gauge — Arc is Ultralite/QVGL emit, not in Qt Quick
+# - turbo_gauge, gauge_ticks, arc_animated — Arc is Ultralite/QVGL emit, not in Qt Quick
 # - themed_chip — Theme.* resolved at QVGL compile time

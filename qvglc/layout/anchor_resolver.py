@@ -63,7 +63,10 @@ def resolve_layout(mod: Module) -> dict[int, NodeLayout]:
             walk(child)
 
     walk(mod.root)
-    return resolved
+
+    from .flex_layout import apply_flex_layout
+
+    return apply_flex_layout(mod, resolved)
 
 
 def _resolve_node(
@@ -231,13 +234,16 @@ def _inset_rect(parent: Rect, margins: dict[str, int]) -> Rect:
 def _intrinsic_size(node: Node) -> tuple[int, int]:
     w = int(node.properties["width"]) if "width" in node.properties else 0
     h = int(node.properties["height"]) if "height" in node.properties else 0
-    if node.kind == "Text" and (w <= 0 or h <= 0):
+    if node.kind in ("Text", "ToolButton") and (w <= 0 or h <= 0):
         text = node.properties.get("text", "")
         if isinstance(text, dict):
             text = "-0.7 bar"
         px = int(node.properties.get("font.pixelSize", 14))
         tw = max(1, int(len(str(text)) * px * 0.55))
         th = max(1, px)
+        if node.kind == "ToolButton":
+            tw = max(tw + 16, 28)
+            th = max(th + 8, 28)
         return (tw if w <= 0 else w, th if h <= 0 else h)
     return (w, h)
 

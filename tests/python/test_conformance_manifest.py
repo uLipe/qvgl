@@ -40,4 +40,7 @@ def test_conformance_tier(case: dict):
     if tier == "partial":
         return
 
+    if tier == "reference":
+        return
+
     pytest.fail(f"unknown tier {tier!r}")

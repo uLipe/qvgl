@@ -1,6 +1,8 @@
 # QVGL
 
-Static QML-to-LVGL compiler for embedded targets. Design in Qt Creator with Qt Quick / Qt for MCUs examples; deploy generated C + LVGL — **no Qt runtime on device**.
+Static QML-to-LVGL compiler. Design in Qt Creator with Qt Quick / Qt for MCUs examples; deploy generated C + LVGL — **no Qt runtime on device**.
+
+QVGL is **generic**: one profile (`ultralite_v1`), QML in → LVGL UI out, validated with pytest and a headless SDL preview harness.
 
 ## Getting started
 
@@ -11,31 +13,22 @@ pip install -e ".[test]"
 qvglc run examples/mcu_minimal/minimal.qml
 ```
 
-Same QML shape as Qt Creator’s Qt for MCUs **minimal** example.
-
-Bound properties (`property real` + Arc / Text bindings):
+Qt for MCUs **minimal** reference (upstream-aligned):
 
 ```bash
-qvglc run examples/cluster_dual_gauge/cluster_dual_gauge.qml \
-  --profile profiles/cluster_480x272.yaml \
-  --set speed_kmh=120 --set rpm=3500
+qvglc run examples/mcu_minimal/minimal.qml
 ```
 
-Vehicle / CAN → UI (`vehicle_bindings.yaml` beside the QML is picked up on compile):
+Bound property + gauge:
 
 ```bash
-qvglc compile examples/cluster_dual_gauge/cluster_dual_gauge.qml -o /tmp/gen \
-  --profile profiles/cluster_480x272.yaml
-
-qvglc run examples/cluster_dual_gauge/cluster_dual_gauge.qml \
-  --profile profiles/cluster_480x272.yaml \
-  --can 0x200:1405A00F --headless --exit --loop-frames 5
+qvglc run examples/turbo_gauge/turbo_gauge.qml --set pressure=1.2
 ```
 
-Static cluster frame (480×272):
+Compile to a directory:
 
 ```bash
-qvglc run examples/cluster_shell/cluster_shell.qml --profile profiles/cluster_480x272.yaml
+qvglc compile examples/turbo_gauge/turbo_gauge.qml -o /tmp/gen --lvgl-path ../lvgl
 ```
 
 Headless smoke:
@@ -44,21 +37,23 @@ Headless smoke:
 qvglc run examples/mcu_minimal/minimal.qml --headless --exit --loop-frames 30
 ```
 
-Compiler output goes to `-o` / `build/run/<module>/` — not committed; only QML, IR goldens, and render PNG fixtures live in `examples/`.
+Compiler output goes to `-o` / `build/run/<module>/` — not committed; examples keep QML + IR/PNG goldens only.
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md).
+Start with [docs/README.md](docs/README.md). Planned work: [docs/09-roadmap.md](docs/09-roadmap.md).
+
+**Out of scope in-tree:** automotive/vehicle demos, CAN bindings, and Qt cluster-specific tooling live outside this repo. The long-term goal is to compile upstream Qt MCUs vehicle QML with the same generic pipeline — without baking that domain into QVGL itself.
 
 ## Layout
 
 ```text
 qvgl/
   docs/           architecture, IR, testing
-  profiles/       supported QML subset
-  examples/       reference UIs + conformance manifest
+  profiles/       ultralite_v1.yaml (single supported subset)
+  examples/       generic reference UIs
   qvglc/          host compiler (Python)
-  runtime/        on-device glue (C)
+  runtime/        minimal on-device glue (C)
   tests/          pytest + SDL preview harness
 ```
 
@@ -66,12 +61,12 @@ qvgl/
 
 ```bash
 pytest tests/python
-pip install -e ".[qt-parity]"   # optional: PyQt6 render parity
-pytest tests/python/test_qt_parity_render.py
 qvglc check examples/mcu_minimal/minimal.qml
 qvglc compile examples/turbo_gauge/turbo_gauge.qml -o /tmp/gen
 ```
 
+Optional Qt render parity: `pip install -e ".[qt-parity]"` then `pytest tests/python/test_qt_parity_render.py`.
+
 ## MCU integration
 
-Copy `qvglc compile` output into your IDF project (e.g. `esp32p4_qvgl_shell/generated/`).
+Copy `qvglc compile` output into your IDF project. See [docs/06-integration-shell.md](docs/06-integration-shell.md).

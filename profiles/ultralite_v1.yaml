@@ -4,8 +4,15 @@ version: 1
 
 imports:
   allowed:
+    - "QtQuick"
     - "QtQuick 2.0"
     - "QtQuick 2.15"
+    - "QtQuick.Controls"
+    - "QtQuick.Controls 2.15"
+    - "QtQuick.Layouts"
+    - "QtQuick.Layouts 1.15"
+    - "QtQuick.Controls.Material"
+    - "QtQuick.Controls.Material 2.15"
 
 types:
   Item:
@@ -28,6 +35,24 @@ types:
   Image:
     extends: Item
     properties: [source, fillMode]
+  ColumnLayout:
+    extends: Item
+    properties: [spacing]
+  RowLayout:
+    extends: Item
+    properties: [spacing]
+  Label:
+    extends: Text
+    properties: []
+  ToolButton:
+    extends: Item
+    properties: [text, color, font.pixelSize, enabled]
+    signals: [clicked]
+  LinePlot:
+    extends: Item
+    properties: [lineColor, plotBg, gridColor, axisColor, labelColor, unitMutedColor, gridDiv, xMin, xMax, yMin, yMax, padL, padR, padT, padB, xUnit, yUnit, hoverEnabled]
+  PlotPoint:
+    properties: [x, y]
   NumberAnimation:
     properties: [duration]
 
@@ -44,6 +69,22 @@ animations:
 display:
   width: 400
   height: 400
+
+fonts:
+  tiers:
+    - max_pixel_size: 14
+      lv_id: montserrat_14
+    - max_pixel_size: 36
+      lv_id: montserrat_36
+    - max_pixel_size: 9999
+      lv_id: montserrat_48
+
+theme:
+  colors:
+    surface: "#1a1a2e"
+    foreground: "#e0e0e0"
+    accent: "#00d4aa"
+    accent_dim: "#505050"
 
 coverage:
   fail_on_unknown_type: true

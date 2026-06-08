@@ -2,6 +2,7 @@
 #include "qvgl_preview_png.h"
 #include "qvgl_preview_sdl.h"
 #include "qvgl_preview_shim.h"
+#include "qvgl/qvgl_plot.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -27,9 +28,13 @@ void app_on_gauge_clicked(void)
     fprintf(stderr, "qvgl_preview: gauge clicked\n");
 }
 
+void app_on_plot_close(void)
+{
+}
+
 typedef struct {
     char name[64];
-    float value;
+    char value[128];
 } prop_override_t;
 
 typedef struct {
@@ -43,8 +48,10 @@ typedef struct {
     uint32_t loop_frames;
     const char * dump_fb;
     bool exit_after;
-    const char * can_args[8];
-    int can_count;
+    bool plot_cursor_set;
+    float plot_t;
+    float plot_y;
+    bool plot_animate;
 } preview_opts_t;
 
 static void usage(const char * argv0)
@@ -52,17 +59,18 @@ static void usage(const char * argv0)
     fprintf(stderr,
             "Usage: %s --gen-dir DIR [options]\n"
             "  --headless           no SDL window\n"
-            "  --set NAME=FLOAT     module property override (repeatable)\n"
+            "  --set NAME=VALUE     module property override (repeatable; typed)\n"
             "  --pressure FLOAT     alias for --set pressure=FLOAT (legacy)\n"
             "  --frames N           refr frames before dump (default 3)\n"
+            "  --plot-cursor T,Y    show plot crosshair at data coords (repeatable)\n"
+            "  --plot-animate       feed synthetic sine series each loop frame\n"
             "  --dump-fb PATH       write PNG of LVGL draw buffer\n"
             "  --loop-frames N      interactive/dummy loop iterations (default 0)\n"
-            "  --exit               exit after loop (for CI smoke)\n"
-            "  --can ID:HEX         demo CAN frame → vehicle apply (repeatable)\n",
+            "  --exit               exit after loop (for CI smoke)\n",
             argv0);
 }
 
-static int add_override(preview_opts_t * o, const char * name, float value)
+static int add_override(preview_opts_t * o, const char * name, const char * value)
 {
     if(o->override_count >= QVGL_MAX_OVERRIDES) {
         fprintf(stderr, "qvgl_preview: too many --set overrides\n");
@@ -71,7 +79,8 @@ static int add_override(preview_opts_t * o, const char * name, float value)
     prop_override_t * slot = &o->overrides[o->override_count++];
     strncpy(slot->name, name, sizeof(slot->name) - 1);
     slot->name[sizeof(slot->name) - 1] = '\0';
-    slot->value = value;
+    strncpy(slot->value, value, sizeof(slot->value) - 1);
+    slot->value[sizeof(slot->value) - 1] = '\0';
     return 0;
 }
 
@@ -79,7 +88,7 @@ static int parse_set_arg(preview_opts_t * o, const char * arg)
 {
     const char * eq = strchr(arg, '=');
     if(!eq || eq == arg) {
-        fprintf(stderr, "qvgl_preview: invalid --set %s (expected NAME=FLOAT)\n", arg);
+        fprintf(stderr, "qvgl_preview: invalid --set %s (expected NAME=VALUE)\n", arg);
         return -1;
     }
     char name[64];
@@ -90,7 +99,7 @@ static int parse_set_arg(preview_opts_t * o, const char * arg)
     }
     memcpy(name, arg, nlen);
     name[nlen] = '\0';
-    return add_override(o, name, (float)strtod(eq + 1, NULL));
+    return add_override(o, name, eq + 1);
 }
 
 static int parse_args(int argc, char ** argv, preview_opts_t * o)
@@ -116,6 +125,25 @@ static int parse_args(int argc, char ** argv, preview_opts_t * o)
         else if(strcmp(argv[i], "--frames") == 0 && i + 1 < argc) {
             o->frames = (uint32_t)strtoul(argv[++i], NULL, 10);
         }
+        else if(strcmp(argv[i], "--plot-cursor") == 0 && i + 1 < argc) {
+            const char * arg = argv[++i];
+            const char * comma = strchr(arg, ',');
+            if(!comma) {
+                fprintf(stderr, "qvgl_preview: invalid --plot-cursor %s (expected T,Y)\n", arg);
+                return -1;
+            }
+            char tbuf[32];
+            size_t tlen = (size_t)(comma - arg);
+            if(tlen >= sizeof(tbuf)) {
+                fprintf(stderr, "qvgl_preview: plot cursor t too long\n");
+                return -1;
+            }
+            memcpy(tbuf, arg, tlen);
+            tbuf[tlen] = '\0';
+            o->plot_t = (float)strtod(tbuf, NULL);
+            o->plot_y = (float)strtod(comma + 1, NULL);
+            o->plot_cursor_set = true;
+        }
         else if(strcmp(argv[i], "--dump-fb") == 0 && i + 1 < argc) {
             o->dump_fb = argv[++i];
         }
@@ -125,12 +153,8 @@ static int parse_args(int argc, char ** argv, preview_opts_t * o)
         else if(strcmp(argv[i], "--exit") == 0) {
             o->exit_after = true;
         }
-        else if(strcmp(argv[i], "--can") == 0 && i + 1 < argc) {
-            if(o->can_count >= (int)(sizeof(o->can_args) / sizeof(o->can_args[0]))) {
-                fprintf(stderr, "qvgl_preview: too many --can frames\n");
-                return -1;
-            }
-            o->can_args[o->can_count++] = argv[++i];
+        else if(strcmp(argv[i], "--plot-animate") == 0) {
+            o->plot_animate = true;
         }
         else {
             usage(argv[0]);
@@ -144,27 +168,22 @@ static int parse_args(int argc, char ** argv, preview_opts_t * o)
     }
 
     if(o->pressure_provided) {
-        if(add_override(o, "pressure", o->pressure) != 0) return -1;
+        char pbuf[32];
+        snprintf(pbuf, sizeof(pbuf), "%g", (double)o->pressure);
+        if(add_override(o, "pressure", pbuf) != 0) return -1;
     }
     return 0;
 }
 
-#if __has_include("qvgl_preview_vehicle.h")
-#include "qvgl_preview_vehicle.h"
-#define QVGL_PREVIEW_HAVE_VEHICLE 1
-#else
-#define QVGL_PREVIEW_HAVE_VEHICLE 0
-#endif
-
 static void apply_overrides(qvgl_preview_ui_t * ui, const preview_opts_t * o)
 {
-#if QVGL_PREVIEW_HAVE_VEHICLE
-    for(int i = 0; i < o->can_count; i++)
-        qvgl_preview_vehicle_apply_can(ui, o->can_args[i]);
-#endif
     for(int i = 0; i < o->override_count; i++) {
-        if(qvgl_preview_set_property(ui, o->overrides[i].name, o->overrides[i].value) != 0) {
-            fprintf(stderr, "qvgl_preview: unknown property %s\n", o->overrides[i].name);
+        const prop_override_t * ov = &o->overrides[i];
+        if(qvgl_preview_apply_property(ui, ov->name, ov->value) != 0) {
+            float f = (float)strtod(ov->value, NULL);
+            if(qvgl_preview_set_property(ui, ov->name, f) != 0) {
+                fprintf(stderr, "qvgl_preview: unknown property %s\n", ov->name);
+            }
         }
     }
 }
@@ -202,6 +221,9 @@ int main(int argc, char ** argv)
     qvgl_preview_ui_create(lv_screen_active(), &ui);
     qvgl_preview_ui_sync(&ui);
     apply_overrides(&ui, &opts);
+    if(opts.plot_cursor_set) {
+        qvgl_preview_set_plot_cursor(&ui, opts.plot_t, opts.plot_y);
+    }
 
     lv_obj_invalidate(lv_screen_active());
     pump_lvgl(opts.frames);
@@ -228,6 +250,16 @@ int main(int argc, char ** argv)
     if(opts.loop_frames > 0 || sdl) {
         uint32_t n = opts.loop_frames > 0 ? opts.loop_frames : 600;
         for(uint32_t i = 0; i < n; i++) {
+            if(opts.plot_animate) {
+                qvgl_plot_point_t pts[32];
+                for(int k = 0; k < 32; k++) {
+                    float t = (float)k / 31.0f * 5.0f;
+                    pts[k].x = t;
+                    pts[k].y = sinf(t * 1.2f + (float)i * 0.15f) * 0.85f;
+                }
+                qvgl_preview_set_plot_points(&ui, pts, 32);
+                lv_obj_invalidate(lv_screen_active());
+            }
             pump_lvgl(1);
             if(sdl) {
                 qvgl_preview_sdl_present(sdl, qvgl_preview_display_draw_buf(disp));

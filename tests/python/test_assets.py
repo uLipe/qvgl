@@ -18,12 +18,9 @@ from qvgl_snapshot import build_preview, dump_preview_frame
 ROOT = Path(__file__).resolve().parents[2]
 LVGL = ROOT.parent / "lvgl"
 PROFILE = ROOT / "profiles/ultralite_v1.yaml"
-CLUSTER_PROFILE = ROOT / "profiles/cluster_480x272.yaml"
 
 ICON_QML = ROOT / "examples/icon_row/icon_row.qml"
 ICON_FRAME = ROOT / "examples/icon_row/golden/frames/icon_row.png"
-
-INSTRUMENT_QML = ROOT / "examples/instrument_cluster_static/instrument_cluster_static.qml"
 
 STATIC_CARD_QML = ROOT / "examples/static_card/static_card.qml"
 THEMED_CHIP_QML = ROOT / "examples/themed_chip/themed_chip.qml"
@@ -56,11 +53,6 @@ def profile():
 
 
 @pytest.fixture
-def cluster_profile():
-    return load_profile(CLUSTER_PROFILE)
-
-
-@pytest.fixture
 def caps():
     if not LVGL.is_dir():
         pytest.skip("lvgl tree not found")
@@ -77,23 +69,23 @@ def test_png_to_argb8888_byte_order(icon_assets, tmp_path):
     assert blob == bytes([0x33, 0x22, 0x11, 0x44])
 
 
-def test_profile_font_tiers(cluster_profile):
-    assert cluster_profile.font_for_pixel_size(10) == "montserrat_14"
-    assert cluster_profile.font_for_pixel_size(22) == "montserrat_36"
-    assert cluster_profile.font_for_pixel_size(90) == "montserrat_48"
+def test_profile_font_tiers(profile):
+    assert profile.font_for_pixel_size(10) == "montserrat_14"
+    assert profile.font_for_pixel_size(22) == "montserrat_36"
+    assert profile.font_for_pixel_size(90) == "montserrat_48"
 
 
-def test_profile_theme_tokens(cluster_profile):
-    assert cluster_profile.theme_colors["cluster_bg"] == "#00414a"
+def test_profile_theme_tokens(profile):
+    assert profile.theme_colors["surface"] == "#1a1a2e"
 
 
-def test_theme_resolves_in_ir(cluster_profile):
-    mod = compile_qml(THEMED_CHIP_QML, cluster_profile, "themed_chip")
+def test_theme_resolves_in_ir(profile):
+    mod = compile_qml(THEMED_CHIP_QML, profile, "themed_chip")
     root = mod.nodes[mod.root]
-    assert root.properties["color"] == "#ff00414a"
+    assert root.properties["color"] == "#ff1a1a2e"
     chip = mod.nodes[root.children[0]]
-    assert chip.properties["color"] == "#ff2cde85"
-    assert chip.properties["border.color"] == "#ff28c878"
+    assert chip.properties["color"] == "#ff00d4aa"
+    assert chip.properties["border.color"] == "#ff505050"
 
 
 def test_image_layout_preserve_aspect_fit():
@@ -140,12 +132,18 @@ def test_image_emit_markers(profile, caps, tmp_path):
     assert "LV_FONT_MONTSERRAT_14" in conf
 
 
-def test_opacity_emit_hidden(cluster_profile, caps, tmp_path):
-    mod = compile_qml(INSTRUMENT_QML, cluster_profile, "instrument_cluster_static")
-    emit_module(mod, caps, tmp_path, asset_root=INSTRUMENT_QML.parent)
-    ui_c = (tmp_path / "ui_instrument_cluster_static.c").read_text(encoding="utf-8")
-    assert ui_c.count("LV_OBJ_FLAG_HIDDEN") >= 2
-    assert "lv_font_montserrat_48" in ui_c
+def test_opacity_emit_style(profile, caps, tmp_path):
+    mod = compile_qml(ICON_QML, profile, "icon_row")
+    emit_module(mod, caps, tmp_path, asset_root=ICON_QML.parent)
+    ui_c = (tmp_path / "ui_icon_row.c").read_text(encoding="utf-8")
+    assert "lv_obj_set_style_opa" in ui_c
+
+
+def test_zero_opacity_emit_hidden(profile, caps, tmp_path):
+    mod = compile_qml(STATIC_CARD_QML, profile, "static_card")
+    emit_module(mod, caps, tmp_path, asset_root=STATIC_CARD_QML.parent)
+    ui_c = (tmp_path / "ui_static_card.c").read_text(encoding="utf-8")
+    assert "LV_OBJ_FLAG_HIDDEN" in ui_c
 
 
 def test_icon_row_render_golden(profile, caps, tmp_path):

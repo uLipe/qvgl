@@ -11,6 +11,11 @@ NODE_KIND = {
     "Arc": 4,
     "Meter": 5,
     "MouseArea": 6,
+    "Label": 7,
+    "ToolButton": 8,
+    "ColumnLayout": 9,
+    "RowLayout": 10,
+    "LinePlot": 11,
 }
 
 NODE_KIND_NAME = {v: k for k, v in NODE_KIND.items()}

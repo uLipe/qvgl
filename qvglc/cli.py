@@ -19,8 +19,6 @@ from qvglc.ir import (
 )
 from qvglc.lvgl_probe import probe_lvgl
 from qvglc.run_preview import run_qml_preview
-from qvglc.vehicle import emit_vehicle_apply, load_bindings, maybe_emit_vehicle_bind, prop_sets_from_can_args
-from qvglc.vehicle.emit_apply import VehicleBindError
 
 
 def _load_module(path: Path):
@@ -67,15 +65,9 @@ def main(argv: list[str] | None = None) -> int:
     p_preview.add_argument("--headless", action="store_true")
     p_preview.add_argument("--pressure", type=float, default=None, help="legacy alias for --set pressure=")
     p_preview.add_argument("--set", action="append", default=[], metavar="NAME=FLOAT")
-    p_preview.add_argument(
-        "--can",
-        action="append",
-        default=[],
-        metavar="ID:HEX",
-        help="demo CAN frame (0x200 speed/rpm); repeatable",
-    )
     p_preview.add_argument("--dump-fb", type=Path, default=None)
     p_preview.add_argument("--loop-frames", type=int, default=0)
+    p_preview.add_argument("--plot-animate", action="store_true")
     p_preview.add_argument("--exit", dest="exit_after", action="store_true")
 
     p_check = sub.add_parser("check", help="Parse and sema-check QML against profile")
@@ -86,13 +78,6 @@ def main(argv: list[str] | None = None) -> int:
     p_coverage.add_argument("input", type=Path)
     p_coverage.add_argument("--profile", type=Path, default=None)
 
-    p_vehicle = sub.add_parser(
-        "vehicle-bind",
-        help="Emit vehicle_state → module setter apply header from bindings YAML",
-    )
-    p_vehicle.add_argument("bindings", type=Path, help="vehicle_bindings.yaml")
-    p_vehicle.add_argument("-o", "--output", type=Path, required=True, help="Output directory")
-
     p_run = sub.add_parser("run", help="Compile QML and open SDL preview (one-shot E2E)")
     p_run.add_argument("input", type=Path, help="Input .qml")
     p_run.add_argument("--build-dir", type=Path, default=Path("build"))
@@ -100,15 +85,9 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--headless", action="store_true")
     p_run.add_argument("--pressure", type=float, default=None, help="legacy alias for --set pressure=")
     p_run.add_argument("--set", action="append", default=[], metavar="NAME=FLOAT")
-    p_run.add_argument(
-        "--can",
-        action="append",
-        default=[],
-        metavar="ID:HEX",
-        help="demo CAN frame (0x200 speed/rpm); repeatable",
-    )
     p_run.add_argument("--profile", type=Path, default=None)
     p_run.add_argument("--loop-frames", type=int, default=0)
+    p_run.add_argument("--plot-animate", action="store_true")
     p_run.add_argument("--exit", dest="exit_after", action="store_true")
 
     args = parser.parse_args(argv)
@@ -156,8 +135,6 @@ def main(argv: list[str] | None = None) -> int:
             caps = probe_lvgl(args.lvgl_path)
             asset_root = args.input.parent if args.input.suffix == ".qml" else None
             paths = emit_module(mod, caps, args.output, asset_root=asset_root)
-            if asset_root is not None:
-                paths.extend(maybe_emit_vehicle_bind(args.input, args.output))
             for p in paths:
                 print(p)
             return 0
@@ -175,16 +152,10 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     preview_bin = Path("build/tests/preview/qvgl_preview")
 
-            sets: list[str] = []
-            if args.can:
-                bindings = args.gen_dir / "vehicle_bindings.yaml"
-                sets.extend(prop_sets_from_can_args(args.can, bindings))
-            sets.extend(args.set)
-
             cmd = [str(preview_bin), "--gen-dir", str(gen_dir)]
             if args.headless:
                 cmd.append("--headless")
-            for item in sets:
+            for item in args.set:
                 cmd.extend(["--set", item])
             if args.pressure is not None:
                 cmd.extend(["--pressure", str(args.pressure)])
@@ -192,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
                 cmd.extend(["--dump-fb", str(args.dump_fb)])
             if args.loop_frames:
                 cmd.extend(["--loop-frames", str(args.loop_frames)])
+            if args.plot_animate:
+                cmd.append("--plot-animate")
             if args.exit_after:
                 cmd.append("--exit")
 
@@ -213,13 +186,6 @@ def main(argv: list[str] | None = None) -> int:
             print(msg)
             return 0 if ok else 1
 
-        if args.cmd == "vehicle-bind":
-            bindings = load_bindings(args.bindings)
-            paths = emit_vehicle_apply(bindings, args.output)
-            for p in paths:
-                print(p)
-            return 0
-
         if args.cmd == "run":
             if args.input.suffix != ".qml":
                 raise EmitError("run requires a .qml file")
@@ -231,12 +197,12 @@ def main(argv: list[str] | None = None) -> int:
                 headless=args.headless,
                 pressure=args.pressure,
                 prop_sets=args.set,
-                can_frames=args.can or None,
                 loop_frames=args.loop_frames,
+                plot_animate=args.plot_animate,
                 exit_after=args.exit_after,
             )
 
-    except (QvglDiagnostic, EmitError, VehicleBindError, Exception) as e:
+    except (QvglDiagnostic, EmitError, Exception) as e:
         print(f"qvglc: {e}", file=sys.stderr)
         return 1
 

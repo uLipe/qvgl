@@ -1,10 +1,62 @@
-# 11. QML conformance matrix (Qt Quick / Ultralite → QVGL → LVGL)
+# 11. QML conformance matrix (Qt Creator → QVGL → LVGL)
 
-Living compatibility reference for **Qt Creator design flow** vs **what QVGL compiles today**. Use this to prioritize roadmap phases and to set expectations with upstream Qt for MCUs examples.
+Living compatibility reference for the **primary QVGL workflow**:
 
-**Not a promise of pixel-perfect Qt runtime parity** — QVGL is static compile-time codegen to LVGL; the matrix tracks *semantic* support per layer.
+> *I want Qt for MCUs but can't pay for it — I design in **Qt Creator**, preview with desktop Qt, and use **QVGL** to compile the trimmed QML into **LVGL C** on my MCU.*
+
+Planned work is tracked in [09-roadmap.md](09-roadmap.md).
+
+**Not pixel-perfect Qt runtime parity** — QVGL is static compile-time codegen to LVGL. The matrix tracks *what you can keep from a Qt Creator QML* and *what you must trim or move to C*.
 
 **Related:** [profiles/ultralite_v1.yaml](../profiles/ultralite_v1.yaml), [08-upstream-examples.md](08-upstream-examples.md), [07-proof-of-correctness.md](07-proof-of-correctness.md).
+
+---
+
+## Qt Creator workflow (practical guide)
+
+### What you keep from a typical Qt Quick HMI
+
+| You designed in Qt Creator… | QVGL today |
+|-----------------------------|------------|
+| Screen `Item` + fixed `width`/`height` | ✅ |
+| `Rectangle` cards, borders, radius | ✅ |
+| `Text` / **Controls `Label`** | ✅ (`Label` → `lv_label`) |
+| `Image` icons (PNG) | ✅ embedded assets |
+| `Arc` gauge + bound value label | ✅ hybrid emit + setters |
+| `MouseArea` / **Controls `ToolButton`** tap | ✅ `app_on_*()` callbacks |
+| **Layouts** `ColumnLayout` / `RowLayout` + `Layout.fill*` | ✅ flex pass after anchors |
+| **Material** / **Theme** colors (`Material.foreground`, `Theme.accent`) | ✅ resolved at **compile time** from profile tokens |
+| Module `property` + bindings (`value: speed`) | ✅ `real` + format strings on `Arc`/`Text` |
+| Oscilloscope-style plot (not `Canvas`) | ✅ **`LinePlot`** + `PlotPoint` children → `lv_chart` |
+| Anchor-based layout (`anchors.fill`, `centerIn`, margins) | ✅ |
+
+### What you must trim or rewrite before `qvglc compile`
+
+| Qt / Qt for MCUs habit | QVGL action |
+|------------------------|-------------|
+| `function foo() { … }` | ❌ Move logic to **C** (`qvgl_runtime`, `qvgl_plot`, app) |
+| `Canvas` + `onPaint` | ❌ Use **`LinePlot`** or custom LVGL draw in app |
+| `Connections`, `State`, `Behavior` | ❌ Wire updates via **module properties + setters** |
+| `ListView`, `Repeater`, `Timer` | ❌ Static UI or app-driven refresh |
+| C++ singletons (`VehicleStatus`, custom `Theme`) | ❌ `property` on root + app setters; `Theme.*` only as **profile colors** |
+| `import` custom modules (`espFoC.theme`) | ❌ Map tokens into `ultralite_v1.yaml` `theme.colors` |
+| `property var` / dynamic point arrays | ⚠️ static **`PlotPoint`** in QML; live data via C **`qvgl_plot_set_points`** |
+| `font.weight`, custom TTF | ❌ Use Montserrat tiers (`font.pixelSize` → nearest tier) |
+| `NumberAnimation` on arbitrary properties | ❌ Only **`NumberAnimation` on `Arc.value`** |
+| Runtime Material theme switching | ❌ Colors baked at compile; restyle = recompile |
+| `ScrollView`, `StackView`, popups, delegates | ❌ Not in profile |
+
+### Recommended design loop
+
+```text
+Qt Creator / PyQt QML  →  qvglc check  →  trim until green
+        ↓
+qvglc compile  →  ui_*.c + preview PNG  →  pytest goldens / qt_parity
+        ↓
+ESP-IDF / bare-metal  →  link LVGL + generated UI + app setters
+```
+
+**Parity tests:** stock Qt Quick QML in `*_qt.qml` where needed (`line_plot_card_qt.qml`); QVGL QML uses declarative types (`LinePlot`). See [examples/conformance/qt_parity.yaml](../examples/conformance/qt_parity.yaml).
 
 ---
 
@@ -14,34 +66,21 @@ Each feature is scored at four layers:
 
 | Layer | Question |
 |-------|----------|
-| **Profile** | Allowed in `ultralite_v1` / `cluster_480x272` YAML? |
+| **Profile** | Allowed in `ultralite_v1.yaml`? |
 | **Sema** | `qvglc check` accepts it? |
 | **IR** | Lowered to IR bindings / properties? |
 | **Emit** | Generates correct LVGL C? |
 
-When a row is ✅ or ⚠️ at **Emit**, the **Proof** column points to the test file, example, or generated artifact that demonstrates real behavior (not profile declaration alone).
-
-### Status legend
-
 | Mark | Meaning |
 |------|---------|
-| ✅ | Works end-to-end (with tests or committed example) |
-| ⚠️ | Partial — parses or emits with known gaps |
-| 📋 | Profile only — declared but not implemented in emit |
-| ❌ | Rejected by sema or out of scope v1 |
-| 🔮 | Planned (roadmap phase) |
-| 🧱 | LVGL / hardware limit — not a QML parser gap |
+| ✅ | Works end-to-end (tests or committed example) |
+| ⚠️ | Partial — known gaps |
+| 📋 | Profile only — not fully emitted |
+| ❌ | Rejected or out of scope |
+| 🔮 | Planned — [09-roadmap.md](09-roadmap.md) |
+| 🧱 | LVGL / hardware limit |
 
-**Machine-checkable subset:** [examples/conformance/manifest.yaml](../examples/conformance/manifest.yaml) — pytest enforces `pass` / `reject` tiers on committed QML.
-
----
-
-## Design principles (tool vs examples)
-
-- **QVGL stays generic** — no automotive- or example-specific CLI/emit paths.
-- **Qt Creator compatibility** is achieved by **profile + emit coverage**, not by forking QML per demo.
-- **Upstream examples** are tiered: `pass`, `partial`, `reject`, `reference` (see [08-upstream-examples.md](08-upstream-examples.md)).
-- **Majority Ultralite-compatible** means: common cluster/HMI screens compile after *documented trimming* (remove animations, C++ singletons, Studio-only types) — not zero-edit drop-in of every commercial demo.
+**Machine-checkable:** [examples/conformance/manifest.yaml](../examples/conformance/manifest.yaml).
 
 ---
 
@@ -49,44 +88,45 @@ When a row is ✅ or ⚠️ at **Emit**, the **Proof** column points to the test
 
 | Import | Profile | Sema | IR | Emit | Notes |
 |--------|---------|------|-----|------|-------|
-| `QtQuick 2.15` | ✅ | ✅ | ✅ | ✅ | Primary import |
-| `QtQuick 2.0` | ✅ | ✅ | ✅ | ✅ | Alias |
-| `QtQuick.Controls` | ❌ | ❌ | — | — | Desktop controls; not Ultralite |
-| `QtQuickUltralite.Studio.Components` | ❌ | ❌ | — | — | Commercial Studio widgets (`Gauge`, `ArcItem`) |
-| `QtQuickUltralite.Extras` | ❌ | ❌ | — | — | 🔮 optional profile extension |
-| `QtQuick.Shapes` | ❌ | ❌ | — | — | 🧱 use Image or LVGL draw APIs |
+| `QtQuick` / `2.15` / `2.0` | ✅ | ✅ | ✅ | ✅ | Version optional (`import QtQuick`) |
+| `QtQuick.Controls` | ✅ | ✅ | ✅ | ✅ | Subset: `Label`, `ToolButton` |
+| `QtQuick.Layouts` | ✅ | ✅ | ✅ | ✅ | `ColumnLayout`, `RowLayout` |
+| `QtQuick.Controls.Material` | ✅ | ✅ | ✅ | ✅ | `Material.*` → profile `theme.colors` at compile time |
+| Custom / app modules | ❌ | ❌ | — | — | Map into profile or trim |
+| `QtQuickUltralite.*` | ❌ | ❌ | — | — | Commercial; use QVGL types instead |
+| `QtQuick.Shapes` | ❌ | ❌ | — | — | Use `Image` or `LinePlot` |
 
 ---
 
-## Types (Qt Quick Ultralite subset)
+## Types
 
-| QML type | Profile | Sema | IR | Emit → LVGL | Proof | Gap / phase |
-|----------|---------|------|-----|-------------|-------|-------------|
-| `Item` | ✅ | ✅ | ✅ | ✅ `lv_obj` | `test_cluster_examples.py` | Root / container |
-| `Rectangle` | ✅ | ✅ | ✅ | ✅ `lv_obj` + style | `examples/static_card/`, `test_assets.py::test_border_emit_markers` | |
-| `Text` | ✅ | ✅ | ✅ | ✅ `lv_label` | `test_assets.py::test_profile_font_tiers`, `instrument_cluster_static` render | `font.weight` ❌ |
-| `Arc` | ✅ | ✅ | ✅ | ✅ `lv_arc` | `test_emit_turbo_gauge.py`, `test_dual_gauge.py` | Single arc, not dual `ArcItem` track+value |
-| `Image` | ✅ | ✅ | ✅ | ✅ `lv_image` | `test_assets.py`, `examples/icon_row/` | `PreserveAspectFit` ✅; `PreserveAspectCrop` 📋 |
-| `MouseArea` | ✅ | ✅ | ✅ | ✅ transparent `lv_obj` | `test_mcu_minimal.py` | `pressed`/`released` 📋 |
-| `Meter` | ✅ | 📋 | ❌ | ❌ | Profile placeholder; use `Arc` + `tickCount` or `Meter` later |
-| `ListView` | ❌ | ❌ | — | — | No model/view |
-| `Repeater` | ❌ | ❌ | — | — | |
-| `Timer` | ❌ | ❌ | — | — | Use app timer + setters |
-| `NumberAnimation` | ✅ | ✅ | ✅ | ✅ `lv_anim` on `Arc.value` | `test_arc_animation.py`, `examples/arc_animated/` | `on value` only |
-| `Behavior` | ❌ | ❌ | — | — | |
-| `State` / `PropertyChanges` | ❌ | ❌ | — | — | |
-| `Connections` | ❌ | ❌ | — | — | |
-| `Component` | ❌ | ❌ | — | — | No dynamic instantiation |
+| QML type | Profile | Sema | IR | Emit → LVGL | Proof | Notes |
+|----------|---------|------|-----|-------------|-------|-------|
+| `Item` | ✅ | ✅ | ✅ | ✅ `lv_obj` | `mcu_minimal` | |
+| `Rectangle` | ✅ | ✅ | ✅ | ✅ `lv_obj` | `static_card` | |
+| `Text` | ✅ | ✅ | ✅ | ✅ `lv_label` | `static_card` | |
+| `Label` (Controls) | ✅ | ✅ | ✅ | ✅ `lv_label` | `controls_card`, `line_plot_card` | Alias of `Text` in IR |
+| `Arc` | ✅ | ✅ | ✅ | ✅ `lv_arc` (+ optional `lv_scale`) | `turbo_gauge`, `gauge_ticks` | |
+| `Image` | ✅ | ✅ | ✅ | ✅ `lv_image` | `icon_row` | |
+| `MouseArea` | ✅ | ✅ | ✅ | ✅ clickable `lv_obj` | `mcu_minimal` | `pressed`/`released` 📋 |
+| `ToolButton` | ✅ | ✅ | ✅ | ✅ `lv_button` | `controls_card`, `line_plot_card` | `onClicked: app_on_*()` |
+| `ColumnLayout` / `RowLayout` | ✅ | ✅ | ✅ | ✅ layout `lv_obj` | `controls_card`, `line_plot_card` | Flex after anchors |
+| `LinePlot` | ✅ | ✅ | ✅ | ✅ `lv_chart` SCATTER | `line_plot_card`, `test_line_plot_card.py` | Not in desktop Qt — use `*_qt.qml` for parity |
+| `PlotPoint` | ✅ | ✅ | ✅ | ✅ static series arrays | `line_plot_card` | Child of `LinePlot` only |
+| `NumberAnimation` | ✅ | ✅ | ✅ | ✅ `lv_anim` | `arc_animated` | **`on value` inside `Arc` only** |
+| `Meter` | ✅ | 📋 | ❌ | ❌ | — | Use `Arc` + ticks |
+| `ListView` / `Repeater` / `Timer` | ❌ | ❌ | — | — | | |
+| `Canvas` | ❌ | ❌ | — | — | | Use `LinePlot` |
+| `State` / `Connections` / `Component` | ❌ | ❌ | — | — | | |
 
-### Qt for MCUs Studio / commercial types
+### Qt for MCUs Studio / commercial
 
-| Type | QVGL | Ultralite equivalent | Phase |
-|------|------|----------------------|-------|
-| `ArcItem` (dual layer) | ❌ | `Arc` × 1 → `lv_arc` bg+indicator | ⚠️ simplified PoC |
-| `Gauge` (Studio) | ❌ | `turbo_gauge` / `cluster_dual_gauge` | reference only |
-| `LinearGradient` | ❌ | flat `color` | 🔮 optional |
-| `Theme` singleton | ⚠️ | `Theme.token` → profile color at compile time | `test_assets.py::test_theme_resolves_in_ir`, `examples/themed_chip/` | Not a runtime singleton |
-| `VehicleStatus` (C++) | ❌ | `qvgl_vehicle_state_t` + `vehicle-bind` | `test_vehicle_model.py` — use module `property` or C apply, not QML singleton |
+| Studio / commercial | QVGL path |
+|---------------------|-----------|
+| `ArcItem` (dual arc) | `Arc` + ticks (`gauge_ticks`) |
+| Studio `Gauge` | `turbo_gauge` reference |
+| `Theme` singleton | `Theme.token` / `Material.*` → profile colors (compile time) |
+| C++ context properties | Root `property` + generated setters |
 
 ---
 
@@ -94,56 +134,45 @@ When a row is ✅ or ⚠️ at **Emit**, the **Proof** column points to the test
 
 | Property | Profile | Sema | IR | Emit | Proof | Notes |
 |----------|---------|------|-----|------|-------|-------|
-| `width` / `height` | ✅ | ✅ | ✅ | ✅ | `test_cluster_examples.py` | Root + explicit sizing |
-| `x` / `y` | ✅ | ✅ | ✅ | ⚠️ | `examples/icon_row/icon_row.qml` | Prefer anchors; absolute pos in layout |
-| `visible` | ✅ | ✅ | ✅ | ✅ | `emit_lvgl/widget_style.py`, `test_assets.py::test_opacity_emit_hidden` | `LV_OBJ_FLAG_HIDDEN` |
-| `opacity` | ✅ | ✅ | ✅ | ✅ | `test_assets.py`, `instrument_cluster_static` render golden | `0` → hidden; fractional → `lv_obj_set_style_opa` |
-| `enabled` | ✅ | ✅ | ✅ | ✅ | `emit_lvgl/widget_style.py` | `lv_obj_clear_flag(CLICKABLE)` |
-| `color` (#RGB/#ARGB) | ✅ | ✅ | ✅ | ✅ | `test_mcu_minimal.py` | Normalized to `#aarrggbb` in IR |
-| `radius` | ✅ | ✅ | ✅ | ✅ | `test_cluster_examples.py` | |
-| `border.width` / `border.color` | ✅ | ✅ | ✅ | ✅ | `test_border_emit_markers`, `examples/static_card/` | |
-| `text` (literal) | ✅ | ✅ | ✅ | ✅ | `examples/static_card/` | |
-| `text` (binding) | ✅ | ✅ | ✅ | ✅ | `test_dual_gauge.py` | `sym` or `format` only |
-| `font.pixelSize` | ✅ | ✅ | ✅ | ✅ | `profiles/cluster_480x272.yaml` `fonts.tiers`, `test_assets.py::test_profile_font_tiers` | Profile tier map → Montserrat 14/36/48 |
-| `font.weight` | ❌ | ❌ | — | — | — | Custom TTF 🔮 |
-| `horizontalAlignment` | ✅ | ✅ | 📋 | ❌ | — | Emit uses align for anchored labels only |
-| `source` / `fillMode` (`Image`) | ✅ | ✅ | ✅ | ✅ | `emit_lvgl/assets.py`, `test_fillmode_emit_preserve_aspect` | PNG embed; `Stretch` + `PreserveAspectFit` |
-| Arc `from` / `to` / `minValue` / `maxValue` / `value` | ✅ | ✅ | ✅ | ✅ | `test_emit_turbo_gauge.py` | CCW sweep via `LV_ARC_MODE_REVERSE` |
-| Arc `lineWidth` / `color` | ✅ | ✅ | ✅ | ✅ | `test_dual_gauge.py` | |
-| Arc `tickCount` / `majorTickEvery` / `showTickLabels` | ✅ | ✅ | ✅ | ✅ | `emit_lvgl/arc_scale.py`, `test_gauge_ticks.py` | `lv_scale` ROUND_OUTER behind `lv_arc` |
-| Arc `rotation` | ✅ | ⚠️ | 📋 | ❌ | — | 🔮 |
+| `width` / `height` | ✅ | ✅ | ✅ | ✅ | `mcu_minimal` | |
+| `implicitWidth` / `implicitHeight` | ✅ | ✅ | ✅ | ✅ | | Maps to `width`/`height` when unset |
+| `required property` / `readonly property` | ✅ | ✅ | ✅ | ✅ | | Qt 6 modifiers; interface docs |
+| `visible` / `opacity` / `enabled` | ✅ | ✅ | ✅ | ✅ | `widget_style.py` | |
+| `color`, `radius`, `border.*` | ✅ | ✅ | ✅ | ✅ | `static_card` | |
+| `text` literal / binding | ✅ | ✅ | ✅ | ✅ | `bound_label` | `format` / `sym` |
+| `font.pixelSize` | ✅ | ✅ | ✅ | ✅ | `test_assets.py` | Tiers 14 / 36 / 48 |
+| `font.weight` | ❌ | ❌ | — | — | | |
+| `Layout.fillWidth` / `fillHeight` | ✅ | ✅ | ✅ | ✅ | `line_plot_card` | Attached props |
+| `Layout.preferredWidth` / `preferredHeight` | ✅ | ✅ | ✅ | ✅ | | |
+| `LinePlot` domain / grid / colors | ✅ | ✅ | ✅ | ✅ | `line_plot_card` | |
+| `LinePlot.hoverEnabled` | ✅ | ✅ | ✅ | ✅ | `test_line_plot_card.py` | Crosshair + `cursorLabel` id |
+| Arc gauge props | ✅ | ✅ | ✅ | ✅ | `turbo_gauge` | |
+| `horizontalAlignment` | ✅ | ✅ | 📋 | ⚠️ | | Full emit 🔮 |
 
 ---
 
-## Anchors (compile-time resolver)
+## Anchors & layout
 
-| Anchor | Profile | Sema | Layout | Emit | Notes |
-|--------|---------|------|--------|------|-------|
-| `anchors.fill` | ✅ | ✅ | ✅ | ✅ | |
-| `anchors.centerIn` | ✅ | ✅ | ✅ | ✅ | parent or sibling id |
-| `anchors.top` / `bottom` / `left` / `right` | ✅ | ✅ | ✅ | ✅ | |
-| `anchors.horizontalCenter` / `verticalCenter` | ✅ | ✅ | ✅ | ✅ | sibling `id.edge` forms |
-| `anchors.margins` | ✅ | ✅ | ✅ | ✅ | uniform |
-| `*Margin` (per-edge) | ✅ | ✅ | ⚠️ | ⚠️ | Negative margins approximate Qt |
+| Feature | Profile | Sema | Layout | Emit | Notes |
+|---------|---------|------|--------|------|-------|
+| `anchors.fill` / `centerIn` / edges | ✅ | ✅ | ✅ | ✅ | |
+| `anchors.margins` / `*Margin` | ✅ | ✅ | ⚠️ | ✅ | |
+| `Layout.*` on children of `*Layout` | ✅ | ✅ | ✅ | ✅ | Flex resolver |
 | `anchors.baseline` | ❌ | ❌ | — | — | |
-| Layout attached props (`Layout.fillWidth`) | ❌ | ❌ | — | — | Use nested `Item` + anchors |
+| `GridLayout`, `StackLayout` | ❌ | ❌ | — | — | 🔮 |
 
 ---
 
-## Module properties & bindings
+## Module properties & expressions
 
 | Feature | Profile | Sema | IR | Emit | Notes |
 |---------|---------|------|-----|------|-------|
-| `property real` / `int` / `bool` / `string` | ✅ | ✅ | ✅ | ⚠️ | Emit: `real` → setter; others 🔮 |
-| `property var` | ✅ | ✅ | ✅ | ⚠️ | Treated as `f32` in IR |
-| Binding `sym` (e.g. `value: speed`) | ✅ | ✅ | ✅ | ✅ | Arc + labels |
-| `toFixed(n) + "suffix"` | ✅ | ✅ | ✅ | ✅ | Lowered to `format` in IR builder |
-| Bare `toFixed(n)` | ⚠️ | ✅ | ⚠️ | ⚠️ | Use `toFixed(n) + ""` pattern |
-| `a + b` (non-format) | ⚠️ | ⚠️ | ❌ | — | Only format-add pattern |
-| `Math.*` / arbitrary JS calls | ❌ | ❌ | — | — | |
-| `map_linear` | ✅ | 📋 | 📋 | 📋 | In profile; turbo uses inline mapping |
-| `ternary` | ✅ | 📋 | 📋 | ❌ | |
-| Division `/` | ❌ | ❌ | — | — | Precompute in C or use format |
+| `property real` + `sym` binding | ✅ | ✅ | ✅ | ✅ | Arc, Text setters |
+| `property int` / `bool` / `string` / `color` | ✅ | ✅ | ✅ | ⚠️ | Parsed; full setter emit 🔮 |
+| `property var` | ✅ | ⚠️ | ⚠️ | ❌ | Avoid in shipped QML |
+| `toFixed(n) + "suffix"` | ✅ | ✅ | ✅ | ✅ | |
+| `Math.*`, JS calls | ❌ | ❌ | — | — | |
+| `function` declarations | ❌ | ❌ | — | — | Use C (`qvgl_plot`, app) |
 
 ---
 
@@ -151,84 +180,76 @@ When a row is ✅ or ⚠️ at **Emit**, the **Proof** column points to the test
 
 | Feature | Profile | Sema | IR | Emit | Notes |
 |---------|---------|------|-----|------|-------|
-| `MouseArea.onClicked` | ✅ | ✅ | ✅ | ✅ | Bare `app_*()` call only |
-| Custom handler names | ⚠️ | ❌ | — | — | Whitelist today; 🔮 symbol table from QML |
+| `MouseArea.onClicked` | ✅ | ✅ | ✅ | ✅ | |
+| `ToolButton.onClicked` | ✅ | ✅ | ✅ | ✅ | |
+| Handler `app_on_*()` | ✅ | ✅ | ✅ | ✅ | App implements C symbol |
+| Arbitrary handler names | ❌ | ❌ | — | — | Must be `app_on_*` |
 | `onPropertyChanged` | ❌ | ❌ | — | — | |
-| C++ singleton signals (`VehicleStatus.on*`) | ❌ | ❌ | — | — |  vehicle model |
 
 ---
 
-## Expressions of compatibility (summary)
+## Runtime C (layered — [12-runtime-data-plane.md](12-runtime-data-plane.md))
 
-### What works today (representative Qt MCUs paths)
+| Layer | Module | Role |
+|-------|--------|------|
+| L0 | `qvgl_runtime` | `qvgl_map_linear_f32`, init |
+| L1 | `qvgl_widget` | Generic `lv_obj` text / visible / opa / arc |
+| L2 | `qvgl_plot` | `LinePlot`: format, domain, points, cursor |
+| L2 | `qvgl_arc` 🔮 | `Arc` value / ticks / anim helpers |
+| L3 | `ui_*.c` emit | Create + thin setters → L1/L2 |
 
-| Workflow | Example | Tier |
-|----------|---------|------|
-| Getting started green screen | `mcu_minimal/minimal.qml` | ✅ pass |
-| Single dynamic gauge | `turbo_gauge/turbo_gauge.qml` | ✅ pass |
-| Static cluster chrome | `cluster_shell/cluster_shell.qml` | ✅ pass |
-| Trimmed instrument HUD | `instrument_cluster_static.qml` | ✅ pass |
-| Icon row (PNG assets) | `icon_row/icon_row.qml` | ✅ pass |
-| Dual bound gauges | `cluster_dual_gauge/cluster_dual_gauge.qml` | ✅ pass |
-
-### What requires trimming from official Qt MCUs QML
-
-| Official feature | Action for QVGL |
-|------------------|-----------------|
-| `Behavior` / `NumberAnimation` | Remove; use static values or C-side updates |
-| `VehicleStatus.*` | Replace with literals or module `property` + app setters |
-| `font.weight` | Not supported; use nearest Montserrat tier |
-| `ArcItem` / Studio `Gauge` | Rewrite as `Arc` + `Text` or keep as reference |
-| `Image` telltales | Use `Image { source: "assets/..." }` — PNG embedded at compile time |
-
-### What LVGL offers beyond current emit (opportunities)
-
-| LVGL 9 widget | Ultralite analogue | QVGL status |
-|---------------|-------------------|------------|
-| `lv_scale` (round) | tick marks, dial labels |  |
-| `lv_image` | `Image`, telltales | ✅ `examples/icon_row/` |
-| `lv_label` long mode / styles | wrapped text, dimmed telltales |  |
-| `lv_obj` opacity / hidden | `opacity`, `visible` | ✅ `widget_style.py` |
-| `lv_button` / `lv_imagebutton` | touch targets | 🔮 if profile adds types |
+| API today | Layer | Proof |
+|-----------|-------|-------|
+| `qvgl_map_linear_f32` | L0 | `smoke.c` |
+| `qvgl_plot_format_axis` | L0 | `smoke.c` |
+| `qvgl_plot_compute_domain` | L0 | `smoke.c` |
+| `qvgl_plot_set_points` / `set_domain` / `set_cursor` | L2 | `runtime_lvgl` test_plot |
+| `qvgl_ui_*_set_plot_points` / `set_plot_domain` | L3→L2 | `line_plot_card` emit |
+| `qvgl_ui_*_set_plot_cursor` | L3→L2 | `line_plot_card`, `--plot-cursor` |
 
 ---
 
-## Gap analysis → roadmap priority
+## Examples map (what to copy)
 
-Priority for **majority Ultralite-shaped HMI** (cluster, gauge, status strip):
+| Example | Qt Creator lesson | Tier |
+|---------|-------------------|------|
+| `mcu_minimal` | Minimal green screen | ✅ pass |
+| `static_card` | Card + anchors | ✅ pass |
+| `bound_label` | `property` + binding | ✅ pass |
+| `turbo_gauge` | Bound `Arc` | ✅ pass |
+| `gauge_ticks` / `arc_animated` | Ticks + animation | ✅ pass |
+| `icon_row` | PNG assets | ✅ pass |
+| `themed_chip` | Theme tokens | ✅ pass |
+| `controls_card` | Controls + Layouts chrome | ✅ (add to manifest) |
+| `line_plot_card` | Full card + `LinePlot` | ✅ + **Qt parity** |
 
-| Priority | Gap | Blocks | Status |
-|----------|-----|--------|--------|
-| ~~P0~~ | ~~`Image` + assets~~ | Telltales, icons | done — `test_assets.py` |
-| ~~P0~~ | ~~`font.pixelSize` tier map~~ | HUD typography | done — `fonts.tiers` |
-| ~~P0~~ | ~~`opacity` / `visible` emit~~ | Blinkers, dimming | done — `instrument_cluster_static` |
-| ~~P1~~ | ~~Theme tokens in QML~~ | Branding | done — `Theme.*` compile-time |
-| ~~P1~~ | ~~`lv_scale` + tick labels~~ | Production gauges | done — `test_gauge_ticks.py` |
-| ~~P1~~ | ~~`border.*` on `Rectangle`~~ | Cards, slots | done |
-| ~~P2~~ | ~~Vehicle model / multi-setter API~~ | Live data without N setters | done — `vehicle-bind` |
-| ~~P2~~ | ~~`NumberAnimation` subset~~ | Needle sweep | done — `arc_animated` |
-| ~~P2~~ | ~~Warning telltales via vehicle-bind~~ | CAN bitmask → `Image` | done — `warning_telltales` |
-| ~~P2~~ | ~~CI GitHub Actions~~ | Host pytest + LVGL | done — `.github/workflows/ci.yml` |
-| P3 | `Row`/`Column` types (syntax sugar) | Ergonomics; anchors work today | planned |
+**Qt render parity** ([qt_parity.yaml](../examples/conformance/qt_parity.yaml)): `mcu_minimal`, `static_card`, `icon_row`, **`line_plot_card`** (QVGL vs `line_plot_card_qt.qml`).
 
 ---
 
-## CI proof strategy
+## Remaining gaps (highest impact)
 
-**GitHub Actions** — `.github/workflows/ci.yml` runs full `pytest tests/python` with LVGL checked out at `../lvgl` (headless `SDL_VIDEODRIVER=dummy`).
+See [09-roadmap.md](09-roadmap.md). Summary:
 
-1. **Reject fixtures** — `tests/fixtures/qml/reject/manifest.yaml` (stable `DiagnosticCode`).
-2. **Conformance manifest** — `examples/conformance/manifest.yaml` (`pass` / `partial` / `reject`).
-3. **Feature proof tests** — e.g. `test_assets.py` for Image/opacity/fonts.
-4. **Qt render parity** — `test_qt_parity_render.py` + `examples/conformance/qt_parity.yaml` (PyQt vs QVGL/SDL, tolerance per case).
-5. **Per-example goldens** — IR + render under `examples/*/golden/`.
-5. **Upstream sync** (optional CI job) — `examples/upstream/manifest.yaml` when Qt SDK present.
+| Area | Gap |
+|------|-----|
+| Plot | ✅ `qvgl_ui_*_set_plot_points` / `set_plot_domain` (L2); preview `--plot-animate` |
+| Controls | `ScrollView`, `Button` styles, `StackView` |
+| Layout | `GridLayout`, baseline anchors |
+| Bindings | `int`/`bool`/`string` hybrid setters |
+| Input | `MouseArea` pressed/released |
+| Typography | `font.weight`, custom fonts |
+| Image | `PreserveAspectCrop` |
+
+---
+
+## CI proof
 
 ```bash
-pytest tests/python/test_conformance_manifest.py tests/python/test_assets.py
-pip install -e ".[qt-parity]" && pytest tests/python/test_qt_parity_render.py
-qvglc check examples/mcu_minimal/minimal.qml
-qvglc compile examples/icon_row/icon_row.qml -o /tmp/icon_gen
-qvglc coverage path/to/upstream.qml   # quick tier probe
+qvglc check path/to/screen.qml
+pytest tests/python/test_conformance_manifest.py
+pytest tests/python/test_qt_parity_render.py   # pip install PyQt6
+pytest tests/python/test_line_plot_card.py
 ```
 
+Full suite: `.github/workflows/ci.yml` with LVGL at `../lvgl`.

@@ -1,22 +1,26 @@
 # QVGL examples
 
-Each example has `*.qml`, optional `golden/*.qvglir.json` (IR fixture), and `golden/frames/*.png` (render fixture). Run `qvglc compile … -o /tmp/gen` for LVGL C output.
+Generic reference UIs — each has `*.qml`, optional `golden/*.qvglir.json`, and optional `golden/frames/*.png`. All use `profiles/ultralite_v1.yaml`.
 
 | Example | Notes |
 |---------|-------|
-| [mcu_minimal](mcu_minimal/) | Qt for MCUs minimal snapshot |
-| [turbo_gauge](turbo_gauge/) | single Arc + binding |
-| [gauge_ticks](gauge_ticks/) | Arc + `lv_scale` ticks |
-| [cluster_dual_gauge](cluster_dual_gauge/) | dual Arc + `vehicle_bindings.yaml` |
-| [cluster_shell](cluster_shell/) | static 480×272 frame |
-| [instrument_cluster_static](instrument_cluster_static/) | trimmed cluster HUD |
-| [icon_row](icon_row/) | PNG telltales |
-| [static_card](static_card/) | static layout card |
-| [themed_chip](themed_chip/) | `Theme.*` tokens |
+| [mcu_minimal](mcu_minimal/) | Qt for MCUs minimal snapshot (primary upstream reference) |
+| [turbo_gauge](turbo_gauge/) | bound `Arc` + `MouseArea` + label |
+| [bound_label](bound_label/) | single `property real` → `Text` |
+| [arc_animated](arc_animated/) | `NumberAnimation on value` → `lv_anim` |
+| [gauge_ticks](gauge_ticks/) | `Arc` + `lv_scale` ticks |
+| [icon_row](icon_row/) | embedded PNG `Image` row |
+| [static_card](static_card/) | static layout + border |
+| [themed_chip](themed_chip/) | `Theme.*` compile-time tokens |
+
+```bash
+qvglc run examples/<name>/<name>.qml
+qvglc compile examples/<name>/<name>.qml -o /tmp/gen --lvgl-path ../lvgl
+```
 
 ## Upstream Qt SDK
 
-[upstream/](upstream/) — sync from Qt Creator via `tools/sync_upstream_examples.sh`. See [docs/08-upstream-examples.md](../docs/08-upstream-examples.md).
+[upstream/](upstream/) — sync from Qt Creator via `tools/sync_upstream_examples.sh`. See [docs/08-upstream-examples.md](../docs/08-upstream-examples.md). Commercial automotive/cluster demos stay **reference-only** outside QVGL.
 
 ## Reject fixtures
 

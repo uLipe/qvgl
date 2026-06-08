@@ -34,3 +34,12 @@ jobs:
         env:
           SDL_VIDEODRIVER: dummy
         run: pytest tests/python -q
+
+      - name: C runtime (R1/R2)
+        working-directory: qvgl
+        env:
+          SDL_VIDEODRIVER: dummy
+        run: |
+          cmake -B build-ci -S . -DQVGL_LVGL_PATH=../lvgl -DQVGL_BUILD_PREVIEW=OFF
+          cmake --build build-ci -j"$(nproc)"
+          ctest --test-dir build-ci -R 'runtime_' --output-on-failure

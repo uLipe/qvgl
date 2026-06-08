@@ -3,12 +3,10 @@ if(NOT QVGL_LVGL_PATH OR NOT IS_DIRECTORY "${QVGL_LVGL_PATH}")
     return()
 endif()
 
-set(LV_BUILD_CONF_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h" CACHE STRING "qvgl preview lv_conf" FORCE)
-set(CONFIG_LV_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(LV_BUILD_SET_CONFIG_OPTS OFF CACHE BOOL "" FORCE)
-
-add_subdirectory("${QVGL_LVGL_PATH}" "${CMAKE_BINARY_DIR}/lvgl_preview_lvgl" EXCLUDE_FROM_ALL)
+if(NOT TARGET lvgl)
+    message(WARNING "lvgl target missing; skipping qvgl_preview")
+    return()
+endif()
 
 set(QVGL_PREVIEW_GEN_DIR "" CACHE PATH "Generated UI directory (ui_*.c from qvglc compile)")
 
@@ -25,15 +23,17 @@ add_executable(qvgl_preview
     qvgl_preview_display.c
     qvgl_preview_png.c
     qvgl_preview_sdl.c
+    qvgl_preview_weak_stubs.c
     ${QVGL_PREVIEW_GEN_SOURCES}
 )
 
 target_include_directories(qvgl_preview PRIVATE
     "${QVGL_PREVIEW_GEN_DIR}"
     "${QVGL_LVGL_PATH}/src"
+    "${CMAKE_SOURCE_DIR}/include"
 )
 
-target_link_libraries(qvgl_preview PRIVATE lvgl qvgl_runtime m)
+target_link_libraries(qvgl_preview PRIVATE lvgl qvgl_runtime_lvgl qvgl_runtime m)
 
 if(SDL2_FOUND)
     target_compile_definitions(qvgl_preview PRIVATE QVGL_PREVIEW_HAVE_SDL=1)

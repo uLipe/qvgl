@@ -101,6 +101,8 @@ class Lexer:
             return Token(TokKind.IMPORT, text, line, col)
         if text == "on":
             return Token(TokKind.ON, text, line, col)
+        if text in ("true", "false"):
+            return Token(TokKind.IDENT, text, line, col)
         return Token(TokKind.IDENT, text, line, col)
 
     def _number(self, line: int, col: int) -> Token:

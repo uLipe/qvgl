@@ -22,12 +22,18 @@ def image_layout(box: Rect, img_w: int, img_h: int, fill_mode: str) -> Rect:
     return box
 
 
+def _is_bound(val: object) -> bool:
+    return isinstance(val, dict) and "binding" in val
+
+
 def emit_opacity_visible(node: Node, var: str) -> list[str]:
     lines: list[str] = []
-    if "visible" in node.properties and not node.properties.get("visible", True):
+    vis = node.properties.get("visible")
+    if "visible" in node.properties and not _is_bound(vis) and not vis:
         lines.append(f"    lv_obj_add_flag({var}, LV_OBJ_FLAG_HIDDEN);")
-    if "opacity" in node.properties:
-        opa = float(node.properties["opacity"])
+    opa_val = node.properties.get("opacity")
+    if "opacity" in node.properties and not _is_bound(opa_val):
+        opa = float(opa_val)
         if opa <= 0.0:
             lines.append(f"    lv_obj_add_flag({var}, LV_OBJ_FLAG_HIDDEN);")
         elif opa < 1.0:

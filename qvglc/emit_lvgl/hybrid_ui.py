@@ -26,10 +26,16 @@ from qvglc.layout import NodeLayout
 from qvglc.lvgl_probe.probe import LvglCapabilities
 
 from .assets import collect_image_nodes, emit_assets
-from .bindings_codegen import emit_setter_body, property_consumers
+from .bindings_codegen import (
+    emit_setter_body,
+    property_consumers,
+    setter_decl,
+    struct_field_decl,
+    struct_field_init,
+)
 from .emit_context import EmitContext
 from .errors import EmitError
-from .static_ui import _emit_root, _text_literal, _with_style
+from .static_ui import _SIGNAL_EVENT, _emit_root, _handler_cb_name, _text_literal, _with_style
 from .widget_style import emit_border, image_layout, lv_font_expr
 
 
@@ -189,10 +195,15 @@ def _emit_mouse_area(
         f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
         f"    lv_obj_add_flag(ui->{field}, LV_OBJ_FLAG_CLICKABLE);",
     ]
-    if node.id and node.id in handler_ids:
-        lines.append(
-            f"    lv_obj_add_event_cb(ui->{field}, qvgl_{mod.module}_{field}_click_cb, LV_EVENT_CLICKED, NULL);"
-        )
+    if node.id:
+        for h in mod.handlers:
+            if h.node != node.id or h.signal not in _SIGNAL_EVENT:
+                continue
+            event = _SIGNAL_EVENT[h.signal]
+            cb_name = _handler_cb_name(mod, field, h.signal)
+            lines.append(
+                f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, {event}, NULL);"
+            )
     return _with_style(node, field, lines)
 
 
@@ -202,7 +213,8 @@ def emit_hybrid(
     out_dir: Path,
     ctx: EmitContext | None = None,
 ) -> list[Path]:
-    caps.require_arc_gauge()
+    if any(n.kind == "Arc" for n in mod.nodes):
+        caps.require_arc_gauge()
     if caps.major < 9:
         raise EmitError(f"LVGL 9+ required, found {caps.version_string}")
 
@@ -225,7 +237,7 @@ def emit_hybrid(
     names[mod.root] = "root"
     consumers = property_consumers(mod)
     bound_props = [p for p in mod.module_properties if consumers.get(p.name)]
-    click_handlers = [h for h in mod.handlers if h.signal == "clicked"]
+    signal_handlers = [h for h in mod.handlers if h.signal in _SIGNAL_EVENT]
     handler_ids = {h.node for h in mod.handlers}
     arc_plans: dict[int, ArcGaugePlan] = {}
     arc_scale_fields: dict[int, str] = {}
@@ -245,7 +257,7 @@ def emit_hybrid(
                 fields.append(f"    lv_obj_t * {scale_name};")
 
     for prop in bound_props:
-        fields.append(f"    float {prop.name};")
+        fields.append(struct_field_decl(prop))
 
     create.extend(_emit_root(mod.nodes[mod.root], layouts[mod.root], names[mod.root], profile))
 
@@ -293,12 +305,14 @@ def emit_hybrid(
     if any(p.value_anim_ms > 0 for p in arc_plans.values()):
         static_cbs.append(ARC_ANIM_STATIC_CB)
 
-    for h in click_handlers:
+    for h in signal_handlers:
         field = names[next(i for i, n in enumerate(mod.nodes) if n.id == h.node)]
+        event = _SIGNAL_EVENT[h.signal]
+        cb_name = _handler_cb_name(mod, field, h.signal)
         static_cbs.append(
-            f"""static void qvgl_{mod.module}_{field}_click_cb(lv_event_t * e)
+            f"""static void {cb_name}(lv_event_t * e)
 {{
-    if(lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    if(lv_event_get_code(e) != {event}) return;
     {h.handler}();
 }}
 """
@@ -308,15 +322,13 @@ def emit_hybrid(
     setter_decls: list[str] = []
     init_setters: list[str] = []
     for prop in bound_props:
-        setter_decls.append(
-            f"void qvgl_{mod.module}_set_{prop.name}(qvgl_ui_{mod.module}_t * ui, float {prop.name});"
-        )
+        setter_decls.append(setter_decl(mod, prop))
         setter_fns.append(
-            emit_setter_body(mod, prop.name, consumers[prop.name], names, arc_plans)
+            emit_setter_body(mod, prop, consumers[prop.name], names, arc_plans)
         )
         init_setters.append(f"    qvgl_{mod.module}_set_{prop.name}(ui, ui->{prop.name});")
 
-    prop_inits = [f"    ui->{p.name} = {_prop_default(p):.1f}f;" for p in bound_props]
+    prop_inits = [struct_field_init(p) for p in bound_props]
 
     mod_upper = mod.module.upper()
     ui_h = f"""#ifndef UI_{mod_upper}_H
@@ -363,10 +375,16 @@ extern "C" {{
 """
         pub_path = out_dir / f"qvgl_{mod.module}.h"
 
-    externs = "\n".join(f"extern void {h.handler}(void);" for h in click_handlers)
+    externs = "\n".join(f"extern void {h.handler}(void);" for h in signal_handlers)
     pub_include = f'#include "qvgl_{mod.module}.h"\n' if bound_props else ""
+    widget_include = '#include "qvgl/qvgl_widget.h"\n' if bound_props or arc_plans else ""
+    extra_includes = ""
+    if any(p.type == "str" for p in bound_props):
+        extra_includes += "#include <string.h>\n"
+    if any(p.type == "bool" for p in bound_props):
+        extra_includes += "#include <stdbool.h>\n"
     ui_c = f"""#include "ui_{mod.module}.h"
-{pub_include}{assets_include}#include <math.h>
+{pub_include}{assets_include}{widget_include}{extra_includes}#include <math.h>
 
 {externs}
 

@@ -30,8 +30,10 @@ def lvgl_path():
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
 def test_qt_qvgl_render_parity(case: dict, tmp_path: Path, lvgl_path: Path):
     qml = ROOT / case["qml"]
+    qt_qml = ROOT / case.get("qt_qml", case["qml"])
     profile = ROOT / case["profile"]
     assert qml.is_file(), qml
+    assert qt_qml.is_file(), qt_qml
 
     w, h = viewport_size(qml, profile)
 
@@ -39,7 +41,7 @@ def test_qt_qvgl_render_parity(case: dict, tmp_path: Path, lvgl_path: Path):
     qt_png = work / "qt.png"
     qvgl_png = work / "qvgl.png"
 
-    render_qt_snapshot(qml, w, h, qt_png)
+    render_qt_snapshot(qt_qml, w, h, qt_png)
     render_qvgl_snapshot(
         qml,
         profile,

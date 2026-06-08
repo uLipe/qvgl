@@ -7,16 +7,20 @@ from qvglc.profile.load import Profile
 
 from .ast import Document, Object
 from .errors import DiagnosticCode, QvglDiagnostic
+from .type_map import LAYOUT_ATTACHED_PROPS, normalize_kind
 
 _PROP_TYPE_MAP = {
     "real": "f32",
+    "double": "f64",
     "int": "i32",
     "bool": "bool",
     "string": "str",
-    "var": "f32",
+    "color": "color",
+    "var": "var",
 }
 
 _LAYOUT_ONLY_PROPS = frozenset({"horizontalAlignment", "verticalAlignment"})
+_LAYOUT_PREFIX = "Layout."
 
 
 def build_ir(doc: Document, profile: Profile, module_name: str) -> Module:
@@ -45,6 +49,28 @@ class _Builder:
         self.bindings: list[Binding] = []
         self.handlers: list[Handler] = []
 
+    def _collect_plot_point(self, obj: Object) -> dict[str, float]:
+        pt: dict[str, float] = {}
+        for name, val, loc in obj.properties:
+            if name not in ("x", "y"):
+                continue
+            if not isinstance(val, (int, float)):
+                raise QvglDiagnostic(
+                    DiagnosticCode.UNSUPPORTED_EXPR,
+                    f"PlotPoint.{name} must be numeric",
+                    loc.line,
+                    loc.column,
+                )
+            pt[name] = float(val)
+        if "x" not in pt or "y" not in pt:
+            raise QvglDiagnostic(
+                DiagnosticCode.UNKNOWN_PROPERTY,
+                "PlotPoint requires x and y",
+                obj.loc.line,
+                obj.loc.column,
+            )
+        return pt
+
     def _apply_arc_value_animation(self, arc_node: Node, anim: Object) -> None:
         for name, val, loc in anim.properties:
             if name == "__on_property__":
@@ -67,21 +93,31 @@ class _Builder:
 
     def build_object(self, obj: Object, *, is_root: bool) -> int:
         idx = len(self.nodes)
-        node = Node(kind=obj.type_name, id=obj.object_id)
+        node = Node(kind=normalize_kind(obj.type_name), id=obj.object_id)
+        if node.kind != obj.type_name:
+            node.properties["qmlType"] = obj.type_name
         self.nodes.append(node)
 
         if is_root:
             self._collect_module_properties(obj)
 
+        if obj.type_name == "LinePlot":
+            series = [self._collect_plot_point(c) for c in obj.children if c.type_name == "PlotPoint"]
+            if series:
+                node.properties["series"] = series
+
         for child in obj.children:
             if child.type_name == "NumberAnimation":
                 self._apply_arc_value_animation(node, child)
+                continue
+            if obj.type_name == "LinePlot" and child.type_name == "PlotPoint":
                 continue
             child_idx = self.build_object(child, is_root=False)
             node.children.append(child_idx)
             self.nodes[child_idx].parent = idx
 
         anchors: dict[str, Any] = {}
+        layout: dict[str, Any] = {}
 
         for name, val, loc in obj.properties:
             if name.startswith("property "):
@@ -89,9 +125,31 @@ class _Builder:
             if name.startswith("anchors."):
                 anchors[name.split(".", 1)[1]] = _lower_anchor(val)
                 continue
+            if name.startswith(_LAYOUT_PREFIX):
+                key = name[len(_LAYOUT_PREFIX) :]
+                if key not in LAYOUT_ATTACHED_PROPS:
+                    raise QvglDiagnostic(
+                        DiagnosticCode.UNKNOWN_PROPERTY,
+                        f"unsupported Layout attached property {key!r}",
+                        loc.line,
+                        loc.column,
+                    )
+                lowered = _lower_property_value(val, self.profile, loc)
+                if isinstance(lowered, dict) and "binding" in lowered:
+                    layout[key] = lowered
+                else:
+                    layout[key] = lowered
+                continue
             if name == "id":
                 continue
             if name in _LAYOUT_ONLY_PROPS:
+                continue
+            if name in ("implicitWidth", "implicitHeight"):
+                dim = "width" if name == "implicitWidth" else "height"
+                if dim not in node.properties:
+                    lowered = _lower_property_value(val, self.profile, loc)
+                    if not (isinstance(lowered, dict) and "binding" in lowered):
+                        node.properties[dim] = lowered
                 continue
             if name.startswith("on") and len(name) > 2 and name[2].isupper():
                 self._add_handler(node, name, val, loc)
@@ -108,6 +166,8 @@ class _Builder:
 
         if anchors:
             node.properties["anchors"] = anchors
+        if layout:
+            node.properties["layout"] = layout
 
         if is_root:
             self._apply_root_display_defaults(node)
@@ -130,8 +190,14 @@ class _Builder:
             parts = name.split()
             if len(parts) < 3:
                 continue
-            qml_type = parts[1]
-            prop_name = parts[2]
+            if parts[1] in ("required", "readonly"):
+                if len(parts) < 4:
+                    continue
+                qml_type = parts[2]
+                prop_name = parts[3]
+            else:
+                qml_type = parts[1]
+                prop_name = parts[2]
             ir_type = _PROP_TYPE_MAP.get(qml_type)
             if ir_type is None:
                 raise QvglDiagnostic(
@@ -200,11 +266,13 @@ def _lower_property_value(val: Any, profile: Profile, loc) -> Any:
         member = val.get("member", "")
         if base == "Theme":
             return _resolve_theme_member(profile, member, loc)
+        if base == "Material" and member in profile.theme_colors:
+            return _resolve_theme_member(profile, member, loc)
         if base == "Image" and member in ("Stretch", "PreserveAspectFit", "PreserveAspectCrop"):
             return member
     if isinstance(val, dict) and val.get("op") == "sym":
         name = val.get("name", "")
-        if name.startswith("Theme."):
+        if name.startswith("Theme.") or name.startswith("Material."):
             return _resolve_theme_member(profile, name.split(".", 1)[1], loc)
         if name.startswith("Image."):
             member = name.split(".", 1)[1]

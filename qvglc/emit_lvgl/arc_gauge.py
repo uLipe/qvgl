@@ -12,6 +12,8 @@ class ArcGaugePlan:
     mode: str
     min_i32: int
     max_i32: int
+    min_value: float
+    max_value: float
     scale: int
     line_width: int
     indicator_color: str
@@ -72,6 +74,8 @@ def plan_arc_gauge(
         mode=mode,
         min_i32=min_i32,
         max_i32=max_i32,
+        min_value=min_value,
+        max_value=max_value,
         scale=scale,
         line_width=line_width,
         indicator_color=color,

@@ -18,7 +18,9 @@ class Import:
 
     @property
     def key(self) -> str:
-        return f"{self.module} {self.version}"
+        if self.version:
+            return f"{self.module} {self.version}"
+        return self.module
 
 
 @dataclass

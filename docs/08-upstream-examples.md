@@ -22,7 +22,7 @@ There is **no separate “Qt Creator examples download”** — install componen
 
 | Tier | Purpose | Upstream examples |
 |------|---------|-------------------|
-| **pass** | Must parse + sema (+ later IR ≡ golden) | `QtMCUs/.../minimal/minimal.qml`, simplified gauge lineage |
+| **pass** | Must parse + sema + IR/render goldens where committed | `mcu_minimal/minimal.qml`, simplified gauge lineage |
 | **reject** | Must fail with stable `DiagnosticCode` | `listmodel.qml`, `layouts/*.qml`, desktop `quick/` samples using unsupported APIs |
 | **reference** | Human/visual baseline; not necessarily compilable by QVGL v1 | `studio_components/Gauge.qml`, `automotive/` cluster |
 

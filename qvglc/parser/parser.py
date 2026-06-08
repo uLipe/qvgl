@@ -32,7 +32,9 @@ class Parser:
         tok = self._advance()
         loc = Loc(tok.line, tok.column)
         mod = self._expect(TokKind.IDENT, "import module name").text
-        ver = self._expect(TokKind.NUMBER, "import version").text
+        ver = ""
+        if self._check(TokKind.NUMBER):
+            ver = self._advance().text
         return Import(mod, ver, loc)
 
     def _parse_object(self) -> Object:
@@ -54,6 +56,31 @@ class Parser:
         while not self._check(TokKind.RBRACE):
             if self._check(TokKind.IDENT):
                 name_tok = self._advance()
+                if name_tok.text == "function":
+                    raise QvglDiagnostic(
+                        DiagnosticCode.UNSUPPORTED_FEATURE,
+                        "QML functions are not supported (move logic to C/runtime)",
+                        name_tok.line,
+                        name_tok.column,
+                    )
+                if name_tok.text in ("required", "readonly"):
+                    mod = name_tok.text
+                    kw = self._expect(TokKind.IDENT, "'property' after modifier")
+                    if kw.text != "property":
+                        raise QvglDiagnostic(
+                            DiagnosticCode.PARSE_SYNTAX,
+                            f"expected 'property' after {mod!r}, got {kw.text!r}",
+                            kw.line,
+                            kw.column,
+                        )
+                    type_tok = self._expect(TokKind.IDENT, "property type")
+                    prop_tok = self._expect(TokKind.IDENT, "property name")
+                    self._expect(TokKind.COLON, "':'")
+                    val, loc = self._parse_value()
+                    obj.properties.append(
+                        (f"property {mod} {type_tok.text} {prop_tok.text}", val, loc)
+                    )
+                    continue
                 if name_tok.text == "property":
                     type_tok = self._expect(TokKind.IDENT, "property type")
                     prop_tok = self._expect(TokKind.IDENT, "property name")
@@ -116,6 +143,13 @@ class Parser:
             text = self._advance().text
             return float(text) if "." in text else int(text), loc
         if self._check(TokKind.IDENT):
+            ident = self._peek().text
+            if ident == "true":
+                self._advance()
+                return True, loc
+            if ident == "false":
+                self._advance()
+                return False, loc
             if self._pos + 1 < len(self._tokens) and self._tokens[self._pos + 1].kind == TokKind.LBRACE:
                 type_name = self._advance().text
                 return self._parse_object_body(type_name), loc

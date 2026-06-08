@@ -6,6 +6,7 @@ from qvglc.profile.load import Profile
 
 from .ast import Document, Object
 from .errors import DiagnosticCode, QvglDiagnostic
+from .type_map import LAYOUT_ATTACHED_PROPS, UNSUPPORTED_QML_TYPES
 
 _UNSUPPORTED_TYPES = frozenset(
     {
@@ -17,7 +18,8 @@ _UNSUPPORTED_TYPES = frozenset(
     }
 )
 
-_ALLOWED_HANDLER_CALLS = frozenset({"app_on_gauge_clicked"})
+def _allowed_handler(callee: str) -> bool:
+    return callee.startswith("app_on_")
 
 
 def analyze(doc: Document, profile: Profile) -> None:
@@ -36,14 +38,28 @@ def analyze(doc: Document, profile: Profile) -> None:
     if not doc.imports:
         raise QvglDiagnostic(DiagnosticCode.UNKNOWN_IMPORT, "missing import QtQuick")
 
-    _check_object(doc.root, profile, module_props={})
+    _check_object(doc.root, profile, module_props={}, parent_type=None)
 
 
-def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -> None:
-    if obj.type_name in ("State", "Connections", "PropertyChanges"):
+def _check_object(
+    obj: Object,
+    profile: Profile,
+    module_props: dict[str, str],
+    *,
+    parent_type: str | None = None,
+) -> None:
+    if obj.type_name == "PlotPoint" and parent_type != "LinePlot":
+        raise QvglDiagnostic(
+            DiagnosticCode.UNKNOWN_TYPE,
+            "PlotPoint is only allowed inside LinePlot",
+            obj.loc.line,
+            obj.loc.column,
+        )
+
+    if obj.type_name in UNSUPPORTED_QML_TYPES:
         raise QvglDiagnostic(
             DiagnosticCode.UNSUPPORTED_FEATURE,
-            f"feature {obj.type_name!r} is not supported",
+            f"type {obj.type_name!r} is not supported",
             obj.loc.line,
             obj.loc.column,
         )
@@ -64,14 +80,14 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
             obj.loc.column,
         )
 
-    if profile.fail_on_unknown_type and obj.type_name not in profile.type_names():
+    profile_type = obj.type_name
+    if profile.fail_on_unknown_type and profile_type not in profile.type_names():
         raise QvglDiagnostic(
             DiagnosticCode.UNKNOWN_TYPE,
             f"unknown type {obj.type_name!r}",
             obj.loc.line,
             obj.loc.column,
         )
-
     if obj.type_name == "ListView":
         raise QvglDiagnostic(
             DiagnosticCode.UNKNOWN_TYPE,
@@ -85,7 +101,10 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
         if name.startswith("property "):
             parts = name.split(" ")
             if len(parts) >= 3:
-                props[parts[2]] = parts[1]
+                if parts[1] in ("required", "readonly") and len(parts) >= 4:
+                    props[parts[3]] = parts[2]
+                else:
+                    props[parts[2]] = parts[1]
             continue
         if name.startswith("property"):
             continue
@@ -117,8 +136,22 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
                 )
             _check_expr(val, loc, props, profile)
             continue
+        if name.startswith("Layout."):
+            attached = name.split(".", 1)[1]
+            if attached not in LAYOUT_ATTACHED_PROPS:
+                raise QvglDiagnostic(
+                    DiagnosticCode.UNKNOWN_PROPERTY,
+                    f"unsupported Layout attached property {attached!r}",
+                    loc.line,
+                    loc.column,
+                )
+            _check_expr(val, loc, props, profile)
+            continue
 
-        allowed = profile.properties_for(obj.type_name)
+        allowed = profile.properties_for(profile_type)
+        if name in ("implicitWidth", "implicitHeight"):
+            _check_expr(val, loc, props, profile)
+            continue
         if profile.fail_on_unknown_property and name not in allowed:
             raise QvglDiagnostic(
                 DiagnosticCode.UNKNOWN_PROPERTY,
@@ -139,7 +172,7 @@ def _check_object(obj: Object, profile: Profile, module_props: dict[str, str]) -
                 child.loc.line,
                 child.loc.column,
             )
-        _check_object(child, profile, props)
+        _check_object(child, profile, props, parent_type=obj.type_name)
 
 
 def _animation_target(child: Object) -> str | None:
@@ -203,19 +236,19 @@ def _check_number_animation(child: Object, parent_type: str, profile: Profile) -
 def _check_handler(val: Any, loc) -> None:
     if isinstance(val, dict) and val.get("op") == "call":
         callee = val.get("callee", "")
-        if callee not in _ALLOWED_HANDLER_CALLS:
+        if not _allowed_handler(callee):
             raise QvglDiagnostic(
                 DiagnosticCode.UNSUPPORTED_EXPR,
-                f"handler call {callee!r} not allowed",
+                f"handler call {callee!r} not allowed (use app_on_* callbacks)",
                 loc.line,
                 loc.column,
             )
         return
     if isinstance(val, dict) and val.get("op") == "sym":
-        if val.get("name") not in _ALLOWED_HANDLER_CALLS:
+        if not _allowed_handler(val.get("name", "")):
             raise QvglDiagnostic(
                 DiagnosticCode.UNSUPPORTED_EXPR,
-                "handler must be a bare app callback call",
+                "handler must be a bare app_on_* callback",
                 loc.line,
                 loc.column,
             )
@@ -244,7 +277,7 @@ def _check_expr(val: Any, loc, props: dict[str, str], profile: Profile) -> None:
     op = val.get("op")
     if op == "sym":
         name = val.get("name", "")
-        if name.startswith("Theme."):
+        if name.startswith("Theme.") or name.startswith("Material."):
             member = name.split(".", 1)[1]
             if member in profile.theme_colors:
                 return
@@ -262,7 +295,9 @@ def _check_expr(val: Any, loc, props: dict[str, str], profile: Profile) -> None:
         member = val.get("member", "")
         if base in ("Text", "Item") and member.startswith("Align"):
             return
-        if base == "Theme" and member in profile.theme_colors:
+        if base in ("Theme", "Material") and member in profile.theme_colors:
+            return
+        if base == "Label" and member.startswith("Align"):
             return
         if base == "Image" and member in ("Stretch", "PreserveAspectFit", "PreserveAspectCrop"):
             return

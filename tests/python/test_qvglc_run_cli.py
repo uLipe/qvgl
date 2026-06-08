@@ -59,8 +59,12 @@ def test_qvglc_run_cli_pass_examples(case: dict, build_dir: Path):
     qml = ROOT / case["qml"]
     profile = ROOT / case["profile"]
     extra: list[str] = []
-    if case["id"] == "cluster_dual_gauge":
-        extra = ["--set", "speed_kmh=80", "--set", "rpm=2500"]
+    if case["id"] == "turbo_gauge":
+        extra = ["--set", "pressure=0.5"]
+    elif case["id"] == "bound_label":
+        extra = ["--set", "value=42"]
+    elif case["id"] == "arc_animated":
+        extra = ["--set", "level=50"]
     r = _run_cmd(
         [
             str(qml.relative_to(ROOT)),

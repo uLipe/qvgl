@@ -25,14 +25,19 @@ cases:
     profile: profiles/ultralite_v1.yaml
     tier: pass
 
-  - id: cluster_shell
-    qml: examples/cluster_shell/cluster_shell.qml
-    profile: profiles/cluster_480x272.yaml
+  - id: bound_label
+    qml: examples/bound_label/bound_label.qml
+    profile: profiles/ultralite_v1.yaml
     tier: pass
 
-  - id: cluster_dual_gauge
-    qml: examples/cluster_dual_gauge/cluster_dual_gauge.qml
-    profile: profiles/cluster_480x272.yaml
+  - id: bound_props_card
+    qml: examples/bound_props_card/bound_props_card.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: arc_animated
+    qml: examples/arc_animated/arc_animated.qml
+    profile: profiles/ultralite_v1.yaml
     tier: pass
 
   - id: icon_row
@@ -42,13 +47,23 @@ cases:
 
   - id: themed_chip
     qml: examples/themed_chip/themed_chip.qml
-    profile: profiles/cluster_480x272.yaml
+    profile: profiles/ultralite_v1.yaml
     tier: pass
 
-  - id: instrument_cluster_static
-    qml: examples/instrument_cluster_static/instrument_cluster_static.qml
-    profile: profiles/cluster_480x272.yaml
+  - id: controls_card
+    qml: examples/controls_card/controls_card.qml
+    profile: profiles/ultralite_v1.yaml
     tier: pass
+
+  - id: line_plot_card
+    qml: examples/line_plot_card/line_plot_card.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: pass
+
+  - id: channel_plot_trim
+    qml: examples/channel_plot_trim/channel_plot_trim.qml
+    profile: profiles/ultralite_v1.yaml
+    tier: reference
 
   - id: reject_unknown_import
     qml: tests/fixtures/qml/reject/unknown_import.qml

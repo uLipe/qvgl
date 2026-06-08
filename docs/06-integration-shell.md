@@ -1,69 +1,75 @@
-# 6. MCU integration shell
+# 6. MCU integration
 
-## Strategy
+## Boundary (generic vs platform)
 
-QVGL v1 does **not** embed into ESP-IDF as a component. The compiler runs on the host; the MCU project only consumes **`generated/`**.
+QVGL stays **platform-agnostic**. No ESP-IDF, BSP, or flash scripts live in the QVGL tree.
 
-## `esp32p4_qvgl_shell` (planned sibling)
+```text
+Host                          MCU (your project)
+────                          ──────────────────
+qvglc compile → generated/    ESP-IDF / CMake app
+qvgl/runtime (L0–L2)    →     links runtime + generated ui_*.c
+lvgl/                   →     board display port (BSP)
+```
 
-Duplicate of `esp32p4_lvgl_benchmark` with:
+**Reference platform:** [`esp32p4_qvgl_shell`](../../esp32p4_qvgl_shell/) in the parent repo — ESP32-P4 EV board, `line_plot_card` sine feed, Passo 3 delivery loop.
 
-- Same BSP, display, PPA/LVGL `sdkconfig.defaults` baseline
-- **No** LVGL demos (`CONFIG_LV_USE_DEMO_*` off)
-- Minimal `main.c`:
+## Host compile
+
+```bash
+qvglc compile qvgl/examples/line_plot_card/line_plot_card.qml \
+  -o my_project/generated --lvgl-path ../lvgl
+```
+
+Outputs: `ui_<module>.c/h`, `qvgl_lv_conf.h`, `qvgl_lvgl.config`, `qvgl_sources.cmake`.
+
+## Device loop (generic C)
 
 ```c
 #include "lvgl.h"
-#include "generated/ui_turbo_gauge.h"
+#include "ui_line_plot_card.h"
+#include "qvgl/qvgl_plot.h"
 
-void app_main(void)
+static qvgl_ui_line_plot_card_t ui;
+
+void app_on_plot_close(void) { /* optional handler from QML */ }
+
+void ui_init(void)
 {
-    /* display init — same as benchmark */
-    qvgl_ui_turbo_gauge_t ui;
-    qvgl_ui_turbo_gauge_create(lv_screen_active(), &ui);
-    qvgl_turbo_gauge_set_pressure(&ui, 0.0f);
+    qvgl_ui_line_plot_card_create(lv_screen_active(), &ui);
+}
 
-    for (;;) {
-        lv_timer_handler();
-    }
+void ui_tick_plot(const qvgl_plot_point_t * pts, size_t n)
+{
+    qvgl_ui_line_plot_card_set_plot_points(&ui, pts, n);
 }
 ```
 
-## Workflow
+Live updates: call generated `qvgl_ui_*_set_*()` or L2 `qvgl_plot_*` from timers/RTOS tasks. QVGL does not ship sensors, CAN, or vehicle logic.
 
-```bash
-# host
-qvglc compile qvgl/examples/turbo_gauge/turbo_gauge.qml \
-  -o esp32p4_qvgl_shell/generated \
-  --lvgl-path lvgl \
-  --profile ultralite_v1
+## CMake (any toolchain)
 
-# device
-cd esp32p4_qvgl_shell && idf.py build flash
+Optional helper for non-IDF builds:
+
+```cmake
+set(QVGL_ROOT /path/to/qvgl)
+set(QVGL_LVGL_PATH /path/to/lvgl)
+set(QVGL_LV_CONF_DIR ${QVGL_ROOT}/tests/preview)  # host lv_conf.h
+include(${QVGL_ROOT}/cmake/qvgl_runtime.cmake)
+qvgl_add_runtime_libraries()
+target_link_libraries(my_app PRIVATE qvgl_runtime_lvgl lvgl ${QVGL_GENERATED}/ui_foo.c)
 ```
 
-## Merging LVGL config
+ESP-IDF projects typically use a local component (see `esp32p4_qvgl_shell/components/qvgl_app`) instead of this file.
 
-1. Add to project `Kconfig.projbuild`:
+## LVGL config
 
-   ```kconfig
-   rsource "generated/qvgl_lvgl.config"
-   ```
+- **ESP-IDF:** merge `generated/qvgl_lvgl.config` into `sdkconfig.defaults`; keep `CONFIG_LV_CONF_SKIP=y`.
+- **Host / custom:** `#include "generated/qvgl_lv_conf.h"` or `rsource` the emitted Kconfig fragment.
 
-2. Or `#include "generated/qvgl_lv_conf.h"` from `lv_conf.h` / project override header.
+## Passo 3 checklist
 
-QVGL fragments only **enable required options**; user `sdkconfig` remains authoritative.
-
-## `--lvgl-path` capability check
-
-Before emit, probe detects e.g.:
-
-- LVGL major/minor from `lv_version.h`
-- Whether `lv_meter`, `lv_arc`, fonts, `LV_USE_FLOAT` exist
-
-Mismatch → compile error with fix hint (`enable CONFIG_LV_USE_METER` or upgrade LVGL).
-
-## Git hygiene
-
-- `esp32p4_qvgl_shell/generated/` → **gitignored**
-- Golden outputs live under `qvgl/examples/.../golden/` for tests only
+- [ ] `qvglc compile` in CI or `scripts/compile_ui.sh` on dev machine
+- [ ] Firmware links `qvgl/runtime` + `generated/ui_*.c` + LVGL
+- [ ] Display init in **platform** project only
+- [ ] App task/timer ≥10 Hz calling setters (plot, gauge, bindings)

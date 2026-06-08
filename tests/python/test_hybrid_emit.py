@@ -13,8 +13,7 @@ from qvglc.parser import compile_qml, default_profile_path, load_profile
 ROOT = Path(__file__).resolve().parents[2]
 LVGL = ROOT.parent / "lvgl"
 TURBO_GOLDEN = ROOT / "examples/turbo_gauge/golden/turbo_gauge.qvglir.json"
-CLUSTER_PROFILE = ROOT / "profiles/cluster_480x272.yaml"
-DUAL_QML = ROOT / "examples/cluster_dual_gauge/cluster_dual_gauge.qml"
+BOUND_QML = ROOT / "examples/bound_label/bound_label.qml"
 
 
 @pytest.fixture
@@ -39,28 +38,23 @@ def test_turbo_hybrid_emit_markers(caps, tmp_path):
     for marker in (
         "qvgl_turbo_gauge_set_pressure",
         "lv_arc_create",
-        "lv_arc_set_value",
+        "qvgl_widget_set_arc_value",
         "int qvgl_preview_set_property",
+        "qvgl_preview_apply_property",
     ):
         assert marker in ui_c or marker in shim_h
 
 
-def test_dual_gauge_setters(caps, tmp_path):
-    prof = load_profile(CLUSTER_PROFILE)
-    mod = compile_qml(DUAL_QML, prof, "cluster_dual_gauge")
+def test_bound_label_setters(caps, tmp_path):
+    prof = load_profile(default_profile_path())
+    mod = compile_qml(BOUND_QML, prof, "bound_label")
     consumers = property_consumers(mod)
-    assert set(consumers) >= {"speed_kmh", "rpm"}
-    assert len(consumers["speed_kmh"]) >= 2
-    assert len(consumers["rpm"]) >= 2
+    assert "value" in consumers
+    assert len(consumers["value"]) >= 1
 
     emit_module(mod, caps, tmp_path)
-    ui_c = (tmp_path / "ui_cluster_dual_gauge.c").read_text(encoding="utf-8")
-    pub_h = (tmp_path / "qvgl_cluster_dual_gauge.h").read_text(encoding="utf-8")
-    assert "qvgl_cluster_dual_gauge_set_speed_kmh" in pub_h
-    assert "qvgl_cluster_dual_gauge_set_rpm" in pub_h
-    assert "lv_arc_create" in ui_c
-    assert "ui->speed_arc" in ui_c
-    assert "ui->rpm_arc" in ui_c
+    pub_h = (tmp_path / "qvgl_bound_label.h").read_text(encoding="utf-8")
+    assert "qvgl_bound_label_set_value" in pub_h
 
 
 def test_static_module_no_setters(caps, tmp_path):

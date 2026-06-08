@@ -2,76 +2,46 @@
 
 ## Philosophy
 
-Tests exist from **day 1** so each pipeline stage can land independently. No hardware required for default CI.
+Generic pipeline proof at each stage; no hardware; no Qt install for default CI.
 
-**Proof-of-correctness strategy (goldens per stage, render E2E, parser chain):** see [07-proof-of-correctness.md](07-proof-of-correctness.md).
+See [07-proof-of-correctness.md](07-proof-of-correctness.md).
 
-## Layers
+## Tests (`tests/python/`)
 
-### Unit
+| Area | Files |
+|------|-------|
+| IR | `test_ir_roundtrip.py`, `test_parser_ir_golden.py` |
+| Parser reject | `test_parser_reject.py`, `test_conformance_manifest.py` |
+| Emit | `test_hybrid_emit.py`, `test_emit_turbo_gauge.py`, `test_assets.py` |
+| Render | `test_render_golden.py`, `test_gauge_ticks.py` |
+| Animation | `test_arc_animation.py` |
+| CLI | `test_qvglc_run_cli.py` |
+| **C runtime** | `test_runtime_c.py` → `ctest` (see below) |
 
-| Module | Fixture | Assertion |
-|--------|---------|-----------|
-| `qvglc/ir` | hand-built node table | round-trip binary → parse → equal |
-| `qvglc/parser` (planned) | `.qml` snippet files | token stream / AST golden |
-| `qvglc/emit_lvgl` | `turbo_gauge.qvglir` | substring / symbol presence |
+## C runtime test suite (R1 / R2)
 
-Runner: `tests/harness/qvgl_test.h` (minimal macros, zero external deps).
+Proof of **runtime semantics** and **generated setter contracts** — parallel to PNG goldens. Full plan: [12-runtime-data-plane.md](12-runtime-data-plane.md).
 
-### Integration
-
-Full path for one module:
-
-```text
-turbo_gauge.qml → qvglir → emit → gcc -c ui_turbo_gauge.c → render golden PNG
-```
-
-With:
-
-- real LVGL from `QVGL_LVGL_PATH` for compile and render tests.
-
-Golden files:
-
-- `examples/turbo_gauge/golden/generated/` — emitted C/H
-- `examples/turbo_gauge/golden/frames/` — render PNGs
-
-### Preview (SDL)
-
-Target: `qvgl_preview`
-
-- Links **real LVGL** + generated UI (`turbo_gauge` does not link `qvgl_runtime`).
-- Display path mirrors MCU intent:
-  - **Draw buffer:** `LV_COLOR_FORMAT_ARGB8888`
-  - **Present:** convert to **RGB565** for SDL texture (simulates panel)
-
-Commands:
+| Tier | Binary | Proves |
+|------|--------|--------|
+| **R1** `qvgl_runtime_unit` | No LVGL | `qvgl_map_linear_f32`, `qvgl_plot_*` pure helpers |
+| **R2** `qvgl_emit_runtime` | Headless LVGL | Generated `ui_*.c` setters → real widget state |
 
 ```bash
-qvglc emit examples/turbo_gauge/golden/turbo_gauge.qvglir.json -o build/gen --lvgl-path ../lvgl
-./build/qvgl_preview build/gen
+cmake -B build -DQVGL_BUILD_TESTS=ON -DQVGL_LVGL_PATH=../lvgl
+cmake --build build
+ctest -R runtime --test-dir build
+pytest tests/python/test_runtime_c.py
 ```
 
-Interactive checks:
-
-- click area fires registered handler (log or toggle)
-- `set_pressure()` updates arc + label
-
-CI headless (smoke):
+## Preview (`qvgl_preview`)
 
 ```bash
-SDL_VIDEODRIVER=dummy ./build/qvgl_preview build/gen --frames 60 --exit
+qvglc run examples/turbo_gauge/turbo_gauge.qml --set pressure=0 --headless --exit
 ```
 
-Render golden (headless framebuffer compare): see [07-proof-of-correctness.md](07-proof-of-correctness.md#render-golden-phase-4).
+Flags: `--headless`, `--set NAME=FLOAT`, `--frames`, `--dump-fb`, `--loop-frames`, `--exit`.
 
-## CI matrix
+## CI
 
-| Job | Runs |
-|-----|------|
-| `test` (`.github/workflows/ci.yml`) | `pytest tests/python` + LVGL + headless preview renders |
-
-Planned later: split `integration` (emit + `gcc -c`) and optional upstream sync job.
-
-## Coverage CLI
-
-`qvglc coverage file.qml --profile ultralite_v1` prints profile matrix and exits non-zero if unsupported features are used — same rules as sema, but report-only for designers.
+`.github/workflows/ci.yml` — `pytest tests/python` + LVGL at `../lvgl`.
