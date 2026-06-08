@@ -10,6 +10,7 @@ from pathlib import Path
 from qvglc.conformance import run_conformance_checks
 from qvglc.coverage import coverage_report
 from qvglc.emit_lvgl import EmitError, emit_module
+from qvglc.emit_lvgl.conf import merge_sdkconfig_fragment
 from qvglc.parser import QvglDiagnostic, check_qml, compile_qml, default_profile_path, load_profile
 from qvglc.ir import (
     decode_binary,
@@ -78,6 +79,13 @@ def main(argv: list[str] | None = None) -> int:
     p_coverage = sub.add_parser("coverage", help="Report whether QML is supported by profile")
     p_coverage.add_argument("input", type=Path)
     p_coverage.add_argument("--profile", type=Path, default=None)
+
+    p_sdkmerge = sub.add_parser(
+        "sdkconfig-merge",
+        help="Enable CONFIG_* keys from qvgl_sdkconfig.defaults in sdkconfig",
+    )
+    p_sdkmerge.add_argument("fragment", type=Path, help="qvgl_sdkconfig.defaults from qvglc compile")
+    p_sdkmerge.add_argument("sdkconfig", type=Path, help="Project sdkconfig to update")
 
     p_conformance = sub.add_parser(
         "conformance",
@@ -197,6 +205,15 @@ def main(argv: list[str] | None = None) -> int:
             ok, msg = coverage_report(args.input, prof)
             print(msg)
             return 0 if ok else 1
+
+        if args.cmd == "sdkconfig-merge":
+            if not args.fragment.is_file():
+                raise EmitError(f"fragment not found: {args.fragment}")
+            if not args.sdkconfig.is_file():
+                raise EmitError(f"sdkconfig not found: {args.sdkconfig}")
+            changed = merge_sdkconfig_fragment(args.fragment, args.sdkconfig)
+            print(f"{'updated' if changed else 'ok'}: {args.sdkconfig}")
+            return 0
 
         if args.cmd == "conformance":
             code, errors = run_conformance_checks(args.manifest)

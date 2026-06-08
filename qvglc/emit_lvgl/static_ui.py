@@ -8,6 +8,7 @@ from qvglc.emit_lvgl.conf import (
     collect_required_fonts,
     emit_qvgl_lv_conf,
     emit_qvgl_lvgl_config,
+    emit_qvgl_sdkconfig_defaults,
     emit_qvgl_sources_cmake,
 )
 from qvglc.emit_lvgl.layout import layout_module
@@ -351,13 +352,15 @@ void qvgl_ui_{mod.module}_create(lv_obj_t * parent, qvgl_ui_{mod.module}_t * ui)
         out_dir / f"ui_{mod.module}.c",
         out_dir / "qvgl_lv_conf.h",
         out_dir / "qvgl_lvgl.config",
+        out_dir / "qvgl_sdkconfig.defaults",
         out_dir / "qvgl_sources.cmake",
     ]
     paths[0].write_text(ui_h, encoding="utf-8")
     paths[1].write_text(ui_c, encoding="utf-8")
     paths[2].write_text(emit_qvgl_lv_conf(caps, fonts=fonts, use_image=use_image), encoding="utf-8")
     paths[3].write_text(emit_qvgl_lvgl_config(fonts=fonts, use_image=use_image), encoding="utf-8")
-    paths[4].write_text(
+    paths[4].write_text(emit_qvgl_sdkconfig_defaults(fonts=fonts, use_image=use_image), encoding="utf-8")
+    paths[5].write_text(
         emit_qvgl_sources_cmake(
             str(caps.lvgl_path).replace("\\", "/"),
             mod.module,

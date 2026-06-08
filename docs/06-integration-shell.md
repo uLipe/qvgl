@@ -21,7 +21,7 @@ qvglc compile qvgl/examples/line_plot_card/line_plot_card.qml \
   -o my_project/generated --lvgl-path ../lvgl
 ```
 
-Outputs: `ui_<module>.c/h`, `qvgl_lv_conf.h`, `qvgl_lvgl.config`, `qvgl_sources.cmake`.
+Outputs: `ui_<module>.c/h`, `qvgl_lv_conf.h`, `qvgl_lvgl.config`, `qvgl_sdkconfig.defaults`, `qvgl_sources.cmake`.
 
 ## Device loop (generic C)
 
@@ -64,8 +64,8 @@ ESP-IDF projects typically use a local component (see `esp32p4_qvgl_shell/compon
 
 ## LVGL config
 
-- **ESP-IDF:** merge `generated/qvgl_lvgl.config` into `sdkconfig.defaults`; keep `CONFIG_LV_CONF_SKIP=y`.
-- **Host / custom:** `#include "generated/qvgl_lv_conf.h"` or `rsource` the emitted Kconfig fragment.
+- **ESP-IDF:** list `generated/qvgl_sdkconfig.defaults` in `SDKCONFIG_DEFAULTS` (after board `sdkconfig.defaults`); keep `CONFIG_LV_CONF_SKIP=y`. Run `compile_ui.sh` — it merges the fragment into an existing `sdkconfig` so fonts/widgets match the emitted UI without `fullclean`.
+- **Host / custom:** `#include "generated/qvgl_lv_conf.h"` before LVGL headers.
 
 ## Passo 3 checklist
 
