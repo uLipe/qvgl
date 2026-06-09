@@ -1,0 +1,8 @@
+# Reference-tier examples: trimmed QML derivatives and optional Qt parity QML.
+# Keys match manifest.yaml case ids with tier: reference.
+
+cases:
+  - id: channel_plot_trim
+    derives_from: line_plot_card
+    qt_qml: examples/channel_plot_trim/channel_plot_trim_qt.qml
+    note: "6-point LinePlot trim, responsive flex; MCU default esp32p4_qvgl_shell"

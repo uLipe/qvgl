@@ -60,6 +60,7 @@ qvgl/
 ## Toolchain
 
 ```bash
+qvglc proof
 pytest tests/python
 qvglc check examples/mcu_minimal/minimal.qml
 qvglc compile examples/turbo_gauge/turbo_gauge.qml -o /tmp/gen

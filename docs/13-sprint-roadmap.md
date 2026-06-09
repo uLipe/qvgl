@@ -27,7 +27,7 @@ Coverage incremental and deterministic: manifest → sema → emit → R1/R2 →
 | **5** | Estados visuais e estilos | ✅ Done |
 | **6** | Runtime L2 + data plane | ✅ Done |
 | **7** | Shell MCU + display profiles | ✅ Done |
-| **8** | Paridade Ultralite (validação externa) | 📋 Planned |
+| **8** | Paridade Ultralite (validação externa) | ✅ Done |
 
 ---
 
@@ -103,11 +103,12 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 
 ---
 
-## Phase 8 — Paridade Ultralite
+## Phase 8 — Paridade Ultralite ✅
 
-- Manifest `reference` tier vs trimmed upstream QML
-- `*_qt.qml` optional high-tolerance job
-- Gaps → generic issues in phases 3–6 only
+- `qvglc proof` — conformance + emit markers + `qt_parity.yaml` + `reference_trim.yaml`
+- `channel_plot_trim` / `channel_plot_trim_qt.qml` reference pair (`derives_from: line_plot_card`)
+- Qt parity job: `test_qt_parity_render.py` (optional CI dep `qt-parity`)
+- Upstream rejects: `examples/upstream/manifest.yaml` + `test_upstream_examples.py`
 
 ---
 

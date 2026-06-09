@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from qvglc.conformance import run_conformance_checks
+from qvglc.proof import run_proof_checks
 from qvglc.coverage import coverage_report
 from qvglc.emit_lvgl import EmitError, emit_module
 from qvglc.emit_lvgl.conf import merge_sdkconfig_fragment
@@ -100,6 +101,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Run manifest.yaml check tiers (smoke/pass/reference/reject)",
     )
     p_conformance.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="Path to manifest.yaml (default: examples/conformance/manifest.yaml)",
+    )
+
+    p_proof = sub.add_parser(
+        "proof",
+        help="Proof-of-correctness gate: conformance + emit markers + qt_parity + reference_trim",
+    )
+    p_proof.add_argument(
         "--manifest",
         type=Path,
         default=None,
@@ -233,6 +245,15 @@ def main(argv: list[str] | None = None) -> int:
                     print(line, file=sys.stderr)
                 return code
             print("ok: conformance manifest")
+            return 0
+
+        if args.cmd == "proof":
+            code, errors = run_proof_checks(manifest=args.manifest)
+            if errors:
+                for line in errors:
+                    print(line, file=sys.stderr)
+                return code
+            print("ok: proof of correctness")
             return 0
 
         if args.cmd == "run":

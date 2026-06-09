@@ -28,6 +28,13 @@ cases:
     per_channel_tolerance: 20
     max_diff_ratio: 0.10
 
+  - id: channel_plot_trim
+    qml: examples/channel_plot_trim/channel_plot_trim.qml
+    qt_qml: examples/channel_plot_trim/channel_plot_trim_qt.qml
+    profile: profiles/ultralite_v1.yaml
+    per_channel_tolerance: 22
+    max_diff_ratio: 0.12
+
 # Deferred (not stock QtQuick):
 # - turbo_gauge, gauge_ticks, arc_animated — Arc is Ultralite/QVGL emit, not in Qt Quick
 # - themed_chip — Theme.* resolved at QVGL compile time

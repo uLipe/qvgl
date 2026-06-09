@@ -233,7 +233,9 @@ Each feature is scored at four layers:
 | `controls_card` | Controls + Layouts chrome | ✅ (add to manifest) |
 | `line_plot_card` | Full card + `LinePlot` | ✅ + **Qt parity** |
 
-**Qt render parity** ([qt_parity.yaml](../examples/conformance/qt_parity.yaml)): `mcu_minimal`, `static_card`, `icon_row`, **`line_plot_card`** (QVGL vs `line_plot_card_qt.qml`).
+**Qt render parity** ([qt_parity.yaml](../examples/conformance/qt_parity.yaml)): `mcu_minimal`, `static_card`, `icon_row`, `line_plot_card`, **`channel_plot_trim`** (QVGL vs `*_qt.qml`).
+
+**Reference trim** ([reference_trim.yaml](../examples/conformance/reference_trim.yaml)): `channel_plot_trim` derives from `line_plot_card`.
 
 ---
 
@@ -256,10 +258,11 @@ See [09-roadmap.md](09-roadmap.md). Summary:
 ## CI proof
 
 ```bash
+qvglc proof
 qvglc check path/to/screen.qml
+pytest tests/python/test_proof.py
 pytest tests/python/test_conformance_manifest.py
-pytest tests/python/test_qt_parity_render.py   # pip install PyQt6
-pytest tests/python/test_line_plot_card.py
+pytest tests/python/test_qt_parity_render.py   # pip install -e ".[qt-parity]"
 ```
 
 Full suite: `.github/workflows/ci.yml` with LVGL at `../lvgl`.

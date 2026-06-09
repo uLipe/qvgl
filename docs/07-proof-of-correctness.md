@@ -20,12 +20,13 @@ See [12-runtime-data-plane.md](12-runtime-data-plane.md) for R1/R2 layout and Pa
 | QML → IR goldens | done — `examples/*/golden/*.qvglir.json` |
 | Static + hybrid emit | done |
 | Render PNG goldens | done — turbo, minimal, gauge_ticks, icon_row, … |
-| Conformance manifest | done |
+| Conformance manifest | done — `qvglc conformance` |
+| `qvglc proof` gate | done — conformance + emit markers + `qt_parity.yaml` + `reference_trim.yaml` |
 | `qvglc run` CLI | done |
-| Qt parity (optional) | done — `test_qt_parity_render.py` |
-| C runtime R1 (unit) | partial — `qvgl_tests` / smoke; split → `qvgl_runtime_unit` planned |
-| C runtime R2 (emit+LVGL) | planned — Passo 1 `test_bound_setters.c` |
-| CI GitHub Actions | done |
+| Qt parity (optional) | done — `test_qt_parity_render.py` (`channel_plot_trim_qt.qml`) |
+| C runtime R1 (unit) | done — `runtime_unit` |
+| C runtime R2 (emit+LVGL) | done — `runtime_lvgl_*` split |
+| CI GitHub Actions | done — `qvglc proof` + pytest + ctest |
 
 ## Render goldens (committed)
 
@@ -37,6 +38,15 @@ See [12-runtime-data-plane.md](12-runtime-data-plane.md) for R1/R2 layout and Pa
 | `icon_row` | PNG embed |
 
 Static modules: no mid-animation PNG unless frame count pinned to completion.
+
+## Proof gate (CI)
+
+```bash
+qvglc proof    # manifest tiers + emit_markers + qt_parity schema + reference_trim
+pytest tests/python/test_proof.py
+pytest tests/python/test_conformance_emit.py
+pytest tests/python/test_qt_parity_render.py   # optional: pip install -e ".[qt-parity]"
+```
 
 ## Principles
 
