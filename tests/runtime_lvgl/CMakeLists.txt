@@ -27,6 +27,7 @@ add_custom_command(
 add_executable(qvgl_runtime_lvgl_test
     main.c
     test_widget.c
+    test_controls.c
     test_plot.c
     test_bound_setters.c
     ${CMAKE_SOURCE_DIR}/tests/preview/qvgl_preview_display.c

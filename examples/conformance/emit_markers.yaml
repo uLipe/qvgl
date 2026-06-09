@@ -52,15 +52,15 @@ controls_inputs:
   - lv_dropdown_create
   - lv_button_create
   - qvgl_controls_inputs_set_gain
-  - qvgl_widget_set_slider_value
-  - qvgl_widget_set_checked
-  - qvgl_widget_set_dropdown_selected
+  - qvgl_controls_set_slider_value
+  - qvgl_controls_set_checked
+  - qvgl_controls_set_dropdown_index
 
 controls_styles:
   - LV_STATE_DISABLED
   - LV_PART_INDICATOR
   - qvgl_controls_styles_set_panelEnabled
-  - qvgl_widget_set_enabled
+  - qvgl_controls_set_enabled
   - qvgl_widget_set_opa_f32
   - app_on_enable_pressed
 

@@ -137,6 +137,39 @@ void test_plot_relayout(void)
     QVGL_ASSERT(lv_obj_get_width(plot.axis_bottom) == plot.chart_w);
 }
 
+void test_plot_secondary_series(void)
+{
+    lv_obj_t * parent = lv_obj_create(lv_screen_active());
+    qvgl_plot_t plot = {0};
+    plot.chart_x = 10;
+    plot.chart_y = 20;
+    plot.chart_w = 200;
+    plot.chart_h = 100;
+    plot.chart = lv_chart_create(parent);
+    lv_obj_set_size(plot.chart, plot.chart_w, plot.chart_h);
+    lv_chart_set_type(plot.chart, LV_CHART_TYPE_SCATTER);
+    plot.series = lv_chart_add_series(plot.chart, lv_color_hex(0x4fc3f7), LV_CHART_AXIS_PRIMARY_Y);
+    plot.legend_labels[0] = lv_label_create(parent);
+    plot.legend_labels[1] = lv_label_create(parent);
+
+    qvgl_plot_set_legend(&plot, "Ia", "Ib");
+    QVGL_ASSERT(strcmp(lv_label_get_text(plot.legend_labels[0]), "Ia") == 0);
+    QVGL_ASSERT(strcmp(lv_label_get_text(plot.legend_labels[1]), "Ib") == 0);
+
+    qvgl_plot_enable_secondary_series(&plot, 0x888888);
+    QVGL_ASSERT(plot.series2 != NULL);
+
+    const qvgl_plot_point_t pts[] = {
+        {0.0f, 0.2f}, {2.5f, -0.5f}, {5.0f, 0.8f},
+    };
+    qvgl_plot_set_points(&plot, pts, 3);
+    const qvgl_plot_point_t pts2[] = {
+        {0.0f, -0.3f}, {2.5f, 0.4f}, {5.0f, -0.1f},
+    };
+    qvgl_plot_set_secondary_points(&plot, pts2, 3);
+    QVGL_ASSERT(plot.point_count2 == 3);
+}
+
 void test_plot_clear_crosshair(void)
 {
     lv_obj_t * parent = lv_obj_create(lv_screen_active());

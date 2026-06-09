@@ -56,6 +56,26 @@ void app_on_apply_clicked(void)
 {
 }
 
+void app_on_dim_moved(void)
+{
+}
+
+void app_on_panel_toggled(void)
+{
+}
+
+void app_on_enable_pressed(void)
+{
+}
+
+void app_on_enable_released(void)
+{
+}
+
+void app_on_action_clicked(void)
+{
+}
+
 typedef struct {
     char name[64];
     char value[128];

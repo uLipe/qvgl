@@ -59,7 +59,7 @@ def slider_initial(node: Node, mod: Module, consumers: dict) -> float:
 
 def emit_slider_value_update(var: str, expr_f32: str, plan: SliderEmitPlan) -> str:
     return (
-        f"    qvgl_widget_set_slider_value({var}, ({expr_f32}), "
+        f"    qvgl_controls_set_slider_value({var}, ({expr_f32}), "
         f"{_float_c_literal(plan.min_value)}, {_float_c_literal(plan.max_value)});"
     )
 

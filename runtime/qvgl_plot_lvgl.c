@@ -175,5 +175,44 @@ void qvgl_plot_relayout(qvgl_plot_t * plot)
     if(plot->y_unit_label)
         lv_obj_set_pos(plot->y_unit_label, 2, plot->chart_y + 6);
 
+    if(plot->legend_labels[0])
+        lv_obj_set_pos(plot->legend_labels[0], plot->chart_x, 2);
+    if(plot->legend_labels[1])
+        lv_obj_set_pos(plot->legend_labels[1], plot->chart_x + 88, 2);
+
     refresh_axis_labels(plot);
+}
+
+void qvgl_plot_enable_secondary_series(qvgl_plot_t * plot, uint32_t color_hex)
+{
+    if(!plot || !plot->chart || plot->series2) return;
+    plot->series2 =
+        lv_chart_add_series(plot->chart, lv_color_hex(color_hex), LV_CHART_AXIS_PRIMARY_Y);
+}
+
+void qvgl_plot_set_secondary_points(qvgl_plot_t * plot, const qvgl_plot_point_t * pts, size_t count)
+{
+    if(!plot || !plot->chart || !plot->series2) return;
+    if(!pts) count = 0;
+    if(count > QVGL_PLOT_MAX_POINTS) count = QVGL_PLOT_MAX_POINTS;
+
+    for(size_t i = 0; i < count; i++) {
+        plot->x_scratch2[i] = qvgl_plot_scale_f32(pts[i].x);
+        plot->y_scratch2[i] = qvgl_plot_scale_f32(pts[i].y);
+    }
+    plot->point_count2 = count;
+
+    size_t n = plot->point_count > count ? plot->point_count : count;
+    if(n > 0) lv_chart_set_point_count(plot->chart, (uint32_t)n);
+    if(count == 0) return;
+    lv_chart_set_series_values2(
+        plot->chart, plot->series2, plot->x_scratch2, plot->y_scratch2, (uint32_t)count);
+    lv_chart_refresh(plot->chart);
+}
+
+void qvgl_plot_set_legend(qvgl_plot_t * plot, const char * primary, const char * secondary)
+{
+    if(!plot) return;
+    if(plot->legend_labels[0]) qvgl_widget_set_text(plot->legend_labels[0], primary ? primary : "");
+    if(plot->legend_labels[1]) qvgl_widget_set_text(plot->legend_labels[1], secondary ? secondary : "");
 }

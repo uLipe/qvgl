@@ -11,12 +11,17 @@ void test_widget_arc_value(void);
 void test_widget_slider_value(void);
 void test_widget_checked(void);
 void test_widget_enabled(void);
+void test_controls_set_enabled(void);
+void test_controls_set_checked(void);
+void test_controls_set_slider_value(void);
+void test_controls_set_dropdown_index(void);
 void test_plot_set_points(void);
 void test_plot_set_domain_labels(void);
 void test_plot_set_cursor(void);
 void test_plot_apply_series(void);
 void test_plot_relayout(void);
 void test_plot_clear_crosshair(void);
+void test_plot_secondary_series(void);
 void test_bound_setters_title(void);
 
 int main(void)
@@ -34,12 +39,17 @@ int main(void)
     QVGL_TEST_RUN(test_widget_slider_value);
     QVGL_TEST_RUN(test_widget_checked);
     QVGL_TEST_RUN(test_widget_enabled);
+    QVGL_TEST_RUN(test_controls_set_enabled);
+    QVGL_TEST_RUN(test_controls_set_checked);
+    QVGL_TEST_RUN(test_controls_set_slider_value);
+    QVGL_TEST_RUN(test_controls_set_dropdown_index);
     QVGL_TEST_RUN(test_plot_set_points);
     QVGL_TEST_RUN(test_plot_set_domain_labels);
     QVGL_TEST_RUN(test_plot_set_cursor);
     QVGL_TEST_RUN(test_plot_apply_series);
     QVGL_TEST_RUN(test_plot_relayout);
     QVGL_TEST_RUN(test_plot_clear_crosshair);
+    QVGL_TEST_RUN(test_plot_secondary_series);
     QVGL_TEST_RUN(test_bound_setters_title);
 
     lv_display_delete(disp);

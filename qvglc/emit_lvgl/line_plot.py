@@ -438,6 +438,27 @@ def emit_line_plot_create(
             f"    lv_obj_set_pos(ui->{pf}.y_unit_label, 2, {chart_y + 6});",
         ]
 
+    legend_primary = str(node.properties.get("legendPrimary", ""))
+    legend_secondary = str(node.properties.get("legendSecondary", ""))
+    if legend_primary or legend_secondary:
+        lines += [
+            f"    ui->{pf}.legend_labels[0] = lv_label_create(ui->{field});",
+            f"    lv_obj_set_style_text_color(ui->{pf}.legend_labels[0], {lv_color_hex_expr(line_color)}, 0);",
+            f"    lv_obj_set_style_text_font(ui->{pf}.legend_labels[0], {axis_font}, 0);",
+            f"    lv_obj_set_pos(ui->{pf}.legend_labels[0], {chart_x}, 2);",
+            f"    ui->{pf}.legend_labels[1] = lv_label_create(ui->{field});",
+            f"    lv_obj_set_style_text_color(ui->{pf}.legend_labels[1], {lv_color_hex_expr(str(node.properties.get('secondaryLineColor', '#ff888888')))}, 0);",
+            f"    lv_obj_set_style_text_font(ui->{pf}.legend_labels[1], {axis_font}, 0);",
+            f"    lv_obj_set_pos(ui->{pf}.legend_labels[1], {chart_x + 88}, 2);",
+            f'    qvgl_plot_set_legend(&ui->{pf}, "{legend_primary}", "{legend_secondary}");',
+        ]
+
+    secondary_color = node.properties.get("secondaryLineColor")
+    if secondary_color is not None:
+        lines.append(
+            f"    qvgl_plot_enable_secondary_series(&ui->{pf}, {lv_color_hex_expr(str(secondary_color))});"
+        )
+
     lines += [
         f"    ui->{pf}.axis_bottom = lv_obj_create(ui->{field});",
         f"    lv_obj_remove_style_all(ui->{pf}.axis_bottom);",

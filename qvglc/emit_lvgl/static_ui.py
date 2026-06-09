@@ -373,7 +373,9 @@ void qvgl_ui_{mod.module}_create(lv_obj_t * parent, qvgl_ui_{mod.module}_t * ui)
     if static_block:
         static_block += "\n"
     pub_include = f'#include "qvgl_{mod.module}.h"\n' if bound_props else ""
-    widget_include = '#include "qvgl/qvgl_widget.h"\n' if bound_props else ""
+    widget_include = (
+        '#include "qvgl/qvgl_widget.h"\n#include "qvgl/qvgl_controls.h"\n' if bound_props else ""
+    )
     extra_includes = ""
     if any(p.type == "str" for p in bound_props):
         extra_includes += "#include <string.h>\n"

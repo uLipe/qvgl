@@ -24,7 +24,7 @@ def test_controls_styles_emit_markers(caps, tmp_path: Path):
     for marker in (
         "LV_STATE_DISABLED",
         "LV_PART_INDICATOR",
-        "qvgl_widget_set_enabled",
+        "qvgl_controls_set_enabled",
         "qvgl_widget_set_opa_f32",
         "app_on_enable_pressed",
         "app_on_enable_released",

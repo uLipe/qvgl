@@ -75,7 +75,7 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 
 ---
 
-## Phase 5 — Estados visuais e estilos (active)
+## Phase 5 — Estados visuais e estilos ✅
 
 - `enabled` / `opacity` / `visible` on all emitted control types (L1 `qvgl_widget_*`, bindings)
 - Material-like chrome: accent track, radius, padding on Controls
@@ -87,11 +87,12 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 
 ---
 
-## Phase 6 — Runtime L2
+## Phase 6 — Runtime L2 (active)
 
-- `qvgl_controls.c` (optional consolidation; no duplicate L1)
-- Plot: multi-series, legend
-- R1/R2 per L2 module; CI split
+- ✅ `qvgl_controls.c` — thin L2 over L1; emit uses `qvgl_controls_*` for bound props
+- ✅ Plot: `qvgl_plot_enable_secondary_series`, `qvgl_plot_set_secondary_points`, `qvgl_plot_set_legend`
+- ✅ R2: `test_controls.c`, `test_plot_secondary_series`
+- R1/R2 per L2 module; CI split (ongoing)
 
 ---
 

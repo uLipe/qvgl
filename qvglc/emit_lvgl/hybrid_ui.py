@@ -100,6 +100,7 @@ def _emit_arc(
     field: str,
     parent: str,
     plan: ArcGaugePlan,
+    profile,
     *,
     responsive: bool = False,
 ) -> list[str]:
@@ -111,11 +112,12 @@ def _emit_arc(
         )
     else:
         geom.append(f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});")
-    return [
+    lines = [
         f"    ui->{field} = lv_arc_create({parent});",
         *geom,
         *emit_arc_gauge_init(f"ui->{field}", plan),
     ]
+    return _with_style(node, field, lines, profile)
 
 
 def _emit_text_hybrid(
@@ -145,7 +147,7 @@ def _emit_text_hybrid(
             f"    lv_obj_set_size(ui->{field}, {r.w}, {r.h});",
             f"    lv_obj_set_pos(ui->{field}, {r.x}, {r.y});",
         ]
-    return _with_style(node, field, lines)
+    return _with_style(node, field, lines, profile)
 
 
 def _emit_image(
@@ -154,6 +156,7 @@ def _emit_image(
     field: str,
     parent: str,
     id_by_source: dict[str, tuple[str, int, int]],
+    profile,
 ) -> list[str]:
     r = lay.rect
     src = str(node.properties["source"])
@@ -166,7 +169,7 @@ def _emit_image(
         f"    lv_obj_set_size(ui->{field}, {box.w}, {box.h});",
         f"    lv_obj_set_pos(ui->{field}, {box.x}, {box.y});",
     ]
-    return _with_style(node, field, lines)
+    return _with_style(node, field, lines, profile)
 
 
 def _emit_rectangle(
@@ -174,6 +177,7 @@ def _emit_rectangle(
     lay: NodeLayout,
     field: str,
     parent: str,
+    profile,
     *,
     responsive: bool = False,
 ) -> list[str]:
@@ -199,7 +203,7 @@ def _emit_rectangle(
     if radius:
         lines.append(f"    lv_obj_set_style_radius(ui->{field}, {radius}, 0);")
     lines.extend(emit_border(node, f"ui->{field}"))
-    return _with_style(node, field, lines)
+    return _with_style(node, field, lines, profile)
 
 
 def _emit_mouse_area(
@@ -209,6 +213,7 @@ def _emit_mouse_area(
     field: str,
     parent: str,
     handler_ids: set[str],
+    profile,
     *,
     responsive: bool = False,
 ) -> list[str]:
@@ -235,7 +240,7 @@ def _emit_mouse_area(
             lines.append(
                 f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, {event}, NULL);"
             )
-    return _with_style(node, field, lines)
+    return _with_style(node, field, lines, profile)
 
 
 def emit_hybrid(
@@ -301,7 +306,7 @@ def emit_hybrid(
         parent = f"ui->{names[node.parent]}"
 
         if node.kind == "Rectangle":
-            create.extend(_emit_rectangle(node, lay, field, parent, responsive=responsive))
+            create.extend(_emit_rectangle(node, lay, field, parent, profile, responsive=responsive))
         elif node.kind == "Arc":
             initial = _arc_initial(node, mod, consumers)
             plan = _plan_arc(node, initial)
@@ -314,14 +319,14 @@ def emit_hybrid(
                         f"    lv_obj_align(ui->{arc_scale_fields[idx]}, LV_ALIGN_CENTER, 0, {lay.align_center_offset_y});"
                     )
                 create.extend(scale_lines)
-            create.extend(_emit_arc(node, lay, field, parent, plan, responsive=responsive))
+            create.extend(_emit_arc(node, lay, field, parent, plan, profile, responsive=responsive))
         elif node.kind == "Text":
             create.extend(_emit_text_hybrid(mod, node, lay, field, parent, profile))
         elif node.kind == "Image":
-            create.extend(_emit_image(node, lay, field, parent, id_by_source))
+            create.extend(_emit_image(node, lay, field, parent, id_by_source, profile))
         elif node.kind == "MouseArea":
             create.extend(
-                _emit_mouse_area(mod, node, lay, field, parent, handler_ids, responsive=responsive)
+                _emit_mouse_area(mod, node, lay, field, parent, handler_ids, profile, responsive=responsive)
             )
         elif node.kind == "Item":
             if responsive and anchors_fill_parent(node):
@@ -341,6 +346,7 @@ def emit_hybrid(
                         *item_geom,
                         f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
                     ],
+                    profile,
                 )
             )
         else:
@@ -421,7 +427,11 @@ extern "C" {{
 
     externs = "\n".join(f"extern void {h.handler}(void);" for h in signal_handlers)
     pub_include = f'#include "qvgl_{mod.module}.h"\n' if bound_props else ""
-    widget_include = '#include "qvgl/qvgl_widget.h"\n' if bound_props or arc_plans else ""
+    widget_include = (
+        '#include "qvgl/qvgl_widget.h"\n#include "qvgl/qvgl_controls.h"\n'
+        if bound_props or arc_plans
+        else ""
+    )
     extra_includes = ""
     if any(p.type == "str" for p in bound_props):
         extra_includes += "#include <string.h>\n"

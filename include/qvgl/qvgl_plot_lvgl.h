@@ -12,6 +12,7 @@ extern "C" {
 typedef struct {
     lv_obj_t * chart;
     lv_chart_series_t * series;
+    lv_chart_series_t * series2;
     lv_obj_t * x_labels[QVGL_PLOT_MAX_TICKS];
     lv_obj_t * y_labels[QVGL_PLOT_MAX_TICKS];
     uint8_t tick_count;
@@ -35,9 +36,13 @@ typedef struct {
     lv_obj_t * cross_v;
     lv_obj_t * cross_h;
     lv_obj_t * cursor_label;
+    lv_obj_t * legend_labels[2];
     int32_t x_scratch[QVGL_PLOT_MAX_POINTS];
     int32_t y_scratch[QVGL_PLOT_MAX_POINTS];
+    int32_t x_scratch2[QVGL_PLOT_MAX_POINTS];
+    int32_t y_scratch2[QVGL_PLOT_MAX_POINTS];
     size_t point_count;
+    size_t point_count2;
 } qvgl_plot_t;
 
 void qvgl_plot_set_domain(qvgl_plot_t * plot, float x_min, float x_max, float y_min, float y_max);
@@ -60,6 +65,12 @@ void qvgl_plot_clear_crosshair(qvgl_plot_t * plot);
 void qvgl_plot_set_cursor(qvgl_plot_t * plot, float t_sec, float y_val);
 
 void qvgl_plot_relayout(qvgl_plot_t * plot);
+
+void qvgl_plot_enable_secondary_series(qvgl_plot_t * plot, uint32_t color_hex);
+
+void qvgl_plot_set_secondary_points(qvgl_plot_t * plot, const qvgl_plot_point_t * pts, size_t count);
+
+void qvgl_plot_set_legend(qvgl_plot_t * plot, const char * primary, const char * secondary);
 
 #ifdef __cplusplus
 }

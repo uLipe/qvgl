@@ -1,7 +1,7 @@
 add_library(qvgl_runtime STATIC qvgl_runtime.c qvgl_plot.c)
 target_include_directories(qvgl_runtime PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-add_library(qvgl_runtime_lvgl STATIC qvgl_plot_lvgl.c qvgl_widget.c)
+add_library(qvgl_runtime_lvgl STATIC qvgl_plot_lvgl.c qvgl_widget.c qvgl_controls.c)
 target_include_directories(qvgl_runtime_lvgl PUBLIC ${CMAKE_SOURCE_DIR}/include)
 if(QVGL_LVGL_PATH AND IS_DIRECTORY "${QVGL_LVGL_PATH}")
     target_include_directories(qvgl_runtime_lvgl PUBLIC "${QVGL_LVGL_PATH}")
