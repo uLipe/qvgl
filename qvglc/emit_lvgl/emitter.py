@@ -10,7 +10,7 @@ from .errors import EmitError
 from .hybrid_ui import emit_hybrid
 from .static_ui import emit_static
 
-_SUPPORTED_PROFILES = frozenset({"ultralite_v1"})
+_SUPPORTED_PROFILES = frozenset({"ultralite_v1", "esp32p4_1024x600"})
 
 
 def emit_module(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from qvglc.profile import Profile, default_profile_path, load_profile
+from qvglc.profile import Profile, apply_mcu_root_display, default_profile_path, load_profile  # noqa: F401
 
 from .errors import DiagnosticCode, QvglDiagnostic
 from .ir_builder import build_ir
@@ -16,6 +16,7 @@ __all__ = [
     "analyze",
     "build_ir",
     "check_qml",
+    "apply_mcu_root_display",
     "compile_qml",
     "default_profile_path",
     "load_profile",

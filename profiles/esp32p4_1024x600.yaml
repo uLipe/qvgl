@@ -1,0 +1,8 @@
+# ESP32-P4 Function EV board (1024×600 DPI panel) — extends ultralite subset.
+extends: ultralite_v1.yaml
+name: esp32p4_1024x600
+version: 1
+
+display:
+  width: 1024
+  height: 600

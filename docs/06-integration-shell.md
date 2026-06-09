@@ -12,7 +12,7 @@ qvgl/runtime (L0–L2)    →     links runtime + generated ui_*.c
 lvgl/                   →     board display port (BSP)
 ```
 
-**Reference platform:** [`esp32p4_qvgl_shell`](../../esp32p4_qvgl_shell/) in the parent repo — ESP32-P4 EV board, `line_plot_card` sine feed, Passo 3 delivery loop.
+**Reference platform:** [`esp32p4_qvgl_shell`](../../esp32p4_qvgl_shell/) in the parent repo — ESP32-P4 EV board (1024×600), `channel_plot_trim` responsive plot + sine `apply_plot_series` loop. Compile with `profiles/esp32p4_1024x600.yaml` and `--mcu-root` (see `scripts/compile_ui.sh`).
 
 ## Host compile
 

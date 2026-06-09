@@ -62,9 +62,28 @@ class Profile:
         return sigs
 
 
+def _deep_merge_dict(base: dict, override: dict) -> dict:
+    out = dict(base)
+    for key, val in override.items():
+        if key == "extends":
+            continue
+        if isinstance(val, dict) and isinstance(out.get(key), dict):
+            out[key] = _deep_merge_dict(out[key], val)
+        else:
+            out[key] = val
+    return out
+
+
 def load_profile(path: Path | str) -> Profile:
     p = Path(path)
     data = yaml.safe_load(p.read_text(encoding="utf-8"))
+    extends = data.get("extends")
+    if extends:
+        base_path = Path(extends)
+        if not base_path.is_absolute():
+            base_path = p.parent / base_path
+        base_data = yaml.safe_load(base_path.read_text(encoding="utf-8"))
+        data = _deep_merge_dict(base_data, data)
     cov = data.get("coverage", {})
     bindings = data.get("bindings", {})
     display = data.get("display", {})
@@ -99,6 +118,20 @@ def load_profile(path: Path | str) -> Profile:
         font_tiers=font_tiers,
         theme_colors=theme_colors,
     )
+
+
+def apply_display_override(profile: Profile, width: int | None, height: int | None) -> Profile:
+    if width is None and height is None:
+        return profile
+    profile.display_width = int(width) if width is not None else profile.display_width
+    profile.display_height = int(height) if height is not None else profile.display_height
+    return profile
+
+
+def apply_mcu_root_display(mod, profile: Profile) -> None:
+    root = mod.nodes[mod.root]
+    root.properties["width"] = profile.display_width
+    root.properties["height"] = profile.display_height
 
 
 def default_profile_path() -> Path:

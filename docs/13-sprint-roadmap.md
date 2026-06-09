@@ -26,7 +26,7 @@ Coverage incremental and deterministic: manifest → sema → emit → R1/R2 →
 | **4** | Controls backlog (types) | ✅ P0/P1/P2 done |
 | **5** | Estados visuais e estilos | ✅ Done |
 | **6** | Runtime L2 + data plane | ✅ Done |
-| **7** | Shell MCU + display profiles | 📋 Planned |
+| **7** | Shell MCU + display profiles | ✅ Done |
 | **8** | Paridade Ultralite (validação externa) | 📋 Planned |
 
 ---
@@ -95,10 +95,11 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 
 ---
 
-## Phase 7 — Shell MCU
+## Phase 7 — Shell MCU ✅
 
-- `display.width/height` in profile or `compile_ui.sh` env
-- `channel_plot_trim` / responsive reference on P4 full screen
+- `profiles/esp32p4_1024x600.yaml` + `QVGL_DISPLAY_WIDTH` / `QVGL_DISPLAY_HEIGHT` env
+- `qvglc compile --display-width/--display-height --mcu-root`
+- `esp32p4_qvgl_shell`: default `channel_plot_trim`, sine `apply_plot_series` loop on P4
 
 ---
 

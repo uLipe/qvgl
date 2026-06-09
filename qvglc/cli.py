@@ -12,6 +12,7 @@ from qvglc.coverage import coverage_report
 from qvglc.emit_lvgl import EmitError, emit_module
 from qvglc.emit_lvgl.conf import merge_sdkconfig_fragment
 from qvglc.parser import QvglDiagnostic, check_qml, compile_qml, default_profile_path, load_profile
+from qvglc.profile import apply_display_override, apply_mcu_root_display
 from qvglc.ir import (
     decode_binary,
     encode_module,
@@ -59,6 +60,13 @@ def main(argv: list[str] | None = None) -> int:
     p_compile.add_argument("-o", "--output", type=Path, required=True, help="Output directory")
     p_compile.add_argument("--lvgl-path", type=Path, default=Path("../lvgl"))
     p_compile.add_argument("--profile", type=Path, default=None)
+    p_compile.add_argument("--display-width", type=int, default=None, help="Override profile display width")
+    p_compile.add_argument("--display-height", type=int, default=None, help="Override profile display height")
+    p_compile.add_argument(
+        "--mcu-root",
+        action="store_true",
+        help="Force root Item to profile display size (MCU full-screen layout)",
+    )
     p_compile.add_argument("--ir-out", type=Path, default=None, help="Write intermediate .qvglir")
 
     p_preview = sub.add_parser("preview", help="Run SDL/LVGL preview on generated UI directory")
@@ -145,7 +153,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "compile":
             if args.input.suffix == ".qml":
                 prof = load_profile(args.profile or default_profile_path())
+                apply_display_override(prof, args.display_width, args.display_height)
                 mod = compile_qml(args.input, prof)
+                if args.mcu_root:
+                    apply_mcu_root_display(mod, prof)
             else:
                 mod = _load_module(args.input)
             validate(mod)
