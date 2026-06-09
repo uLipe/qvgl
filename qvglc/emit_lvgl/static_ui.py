@@ -68,6 +68,7 @@ from .responsive_layout import (
 from .widget_style import (
     emit_border,
     emit_enabled,
+    emit_material_control_chrome,
     emit_opacity_visible,
     image_layout,
     lv_font_expr,
@@ -113,8 +114,10 @@ _SIGNAL_EVENT = {
     "activated": "LV_EVENT_VALUE_CHANGED",
 }
 
-_SLIDER_HANDLER_SIGNALS = frozenset({"moved", "valueChanged"})
-_COMBO_HANDLER_SIGNALS = frozenset({"activated"})
+_SLIDER_HANDLER_SIGNALS = frozenset({"moved", "valueChanged", "pressed", "released"})
+_INTERACTION_HANDLER_SIGNALS = frozenset({"clicked", "pressed", "released"})
+_COMBO_HANDLER_SIGNALS = frozenset({"activated", "pressed", "released"})
+_CONTROL_CHROME_KINDS = frozenset({"Slider", "Switch", "CheckBox", "ComboBox"})
 
 
 def _handler_cb_name(mod: Module, field: str, signal: str) -> str:
@@ -137,10 +140,30 @@ def _handler_cbs_for(
     return out
 
 
-def _with_style(node: Node, field: str, lines: list[str]) -> list[str]:
+def _append_signal_handlers(
+    lines: list[str],
+    mod: Module,
+    field: str,
+    node: Node,
+    handlers: list,
+    signals: frozenset[str],
+) -> None:
+    if not node.id:
+        return
+    for h in handlers:
+        if h.node != node.id or h.signal not in signals:
+            continue
+        cb = _handler_cb_name(mod, field, h.signal)
+        event = _SIGNAL_EVENT[h.signal]
+        lines.append(f"    lv_obj_add_event_cb(ui->{field}, {cb}, {event}, NULL);")
+
+
+def _with_style(node: Node, field: str, lines: list[str], profile: Profile | None = None) -> list[str]:
     var = f"ui->{field}"
     lines.extend(emit_opacity_visible(node, var))
     lines.extend(emit_enabled(node, var))
+    if profile and node.kind in _CONTROL_CHROME_KINDS:
+        lines.extend(emit_material_control_chrome(node, var, profile))
     return lines
 
 
@@ -434,7 +457,7 @@ def _emit_root(root: Node, lay: NodeLayout, field: str, profile, responsive: boo
         if radius:
             lines.append(f"    lv_obj_set_style_radius(ui->{field}, {radius}, 0);")
     lines.extend(emit_border(root, f"ui->{field}"))
-    return _with_style(root, field, lines)
+    return _with_style(root, field, lines, profile)
 
 
 def _emit_node(
@@ -475,7 +498,7 @@ def _emit_node(
         if radius:
             lines.append(f"    lv_obj_set_style_radius(ui->{field}, {radius}, 0);")
         lines.extend(emit_border(node, f"ui->{field}"))
-        return _with_style(node, field, lines)
+        return _with_style(node, field, lines, profile)
 
     if node.kind == "Text":
         px = int(node.properties.get("font.pixelSize", 14))
@@ -497,7 +520,7 @@ def _emit_node(
             )
         else:
             lines.extend(emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y))
-        return _with_style(node, field, lines)
+        return _with_style(node, field, lines, profile)
 
     if node.kind == "Image":
         src = str(node.properties["source"])
@@ -515,7 +538,7 @@ def _emit_node(
                 f"    lv_obj_set_size(ui->{field}, {box.w}, {box.h});",
                 f"    lv_obj_set_pos(ui->{field}, {box.x}, {box.y});",
             ]
-        return _with_style(node, field, lines)
+        return _with_style(node, field, lines, profile)
 
     if node.kind == "MouseArea":
         lines = [
@@ -533,7 +556,7 @@ def _emit_node(
                 lines.append(
                     f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, {event}, NULL);"
                 )
-        return _with_style(node, field, lines)
+        return _with_style(node, field, lines, profile)
 
     if node.kind in ("ColumnLayout", "RowLayout"):
         spacing = int(node.properties.get("spacing", 0))
@@ -563,7 +586,7 @@ def _emit_node(
             *flex,
             f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
         ]
-        return _with_style(node, field, lines)
+        return _with_style(node, field, lines, profile)
 
     if node.kind == "LinePlot":
         return _with_style(
@@ -581,6 +604,7 @@ def _emit_node(
                 hover=hover_plan,
                 responsive=responsive,
             ),
+            profile,
         )
 
     if node.kind == "Slider":
@@ -597,11 +621,8 @@ def _emit_node(
             ]
         else:
             geom = emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y)
-        return _with_style(
-            node,
-            field,
-            emit_slider_create(field, parent, plan, geom, handler_cbs=handler_cbs),
-        )
+        slider_lines = emit_slider_create(field, parent, plan, geom, handler_cbs=handler_cbs)
+        return _with_style(node, field, slider_lines, profile)
 
     if node.kind == "Switch":
         checked = bool(node.properties.get("checked", False))
@@ -613,12 +634,8 @@ def _emit_node(
         ]
         if checked:
             lines.append(f"    lv_obj_add_state(ui->{field}, LV_STATE_CHECKED);")
-        if node.id and node.id in handler_ids:
-            cb_name = _handler_cb_name(mod, field, "clicked")
-            lines.append(
-                f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, LV_EVENT_CLICKED, NULL);"
-            )
-        return _with_style(node, field, lines)
+        _append_signal_handlers(lines, mod, field, node, handlers, _INTERACTION_HANDLER_SIGNALS)
+        return _with_style(node, field, lines, profile)
 
     if node.kind == "CheckBox":
         label = _text_literal(node, mod)
@@ -636,12 +653,8 @@ def _emit_node(
         ]
         if checked:
             lines.append(f"    lv_obj_add_state(ui->{field}, LV_STATE_CHECKED);")
-        if node.id and node.id in handler_ids:
-            cb_name = _handler_cb_name(mod, field, "clicked")
-            lines.append(
-                f"    lv_obj_add_event_cb(ui->{field}, {cb_name}, LV_EVENT_CLICKED, NULL);"
-            )
-        return _with_style(node, field, lines)
+        _append_signal_handlers(lines, mod, field, node, handlers, _INTERACTION_HANDLER_SIGNALS)
+        return _with_style(node, field, lines, profile)
 
     if node.kind in ("ToolButton", "Button"):
         px = int(node.properties.get("font.pixelSize", 14))
@@ -682,11 +695,8 @@ def _emit_node(
                 f"    }}",
             ]
         )
-        if node.id and node.id in handler_ids:
-            lines.append(
-                f"    lv_obj_add_event_cb(ui->{field}, qvgl_{mod.module}_{field}_click_cb, LV_EVENT_CLICKED, NULL);"
-            )
-        return _with_style(node, field, lines)
+        _append_signal_handlers(lines, mod, field, node, handlers, _INTERACTION_HANDLER_SIGNALS)
+        return _with_style(node, field, lines, profile)
 
     if node.kind == "ComboBox":
         px = int(node.properties.get("font.pixelSize", 14))
@@ -697,8 +707,9 @@ def _emit_node(
             selected = 0
         if selected >= len(items):
             selected = max(0, len(items) - 1)
+        combo_signals = frozenset({"activated"})
         handler_cbs = (
-            _handler_cbs_for(handlers, node.id, field, mod, _COMBO_HANDLER_SIGNALS)
+            _handler_cbs_for(handlers, node.id, field, mod, combo_signals)
             if node.id
             else []
         )
@@ -720,6 +731,8 @@ def _emit_node(
         lines.append(
             f"    lv_obj_set_style_text_font(ui->{field}, {lv_font_expr(profile, px)}, 0);"
         )
-        return _with_style(node, field, lines)
+        pressed_released = frozenset({"pressed", "released"})
+        _append_signal_handlers(lines, mod, field, node, handlers, pressed_released)
+        return _with_style(node, field, lines, profile)
 
     raise EmitError(f"static emit unsupported node kind: {node.kind}")

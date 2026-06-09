@@ -165,6 +165,10 @@ def _emit_consumer(
         if prop.type != "bool":
             raise EmitError(f"binding key visible requires bool property, got {prop.type!r}")
         return f"    qvgl_widget_set_visible(ui->{field}, {param});"
+    if key == "enabled":
+        if prop.type != "bool":
+            raise EmitError(f"binding key enabled requires bool property, got {prop.type!r}")
+        return f"    qvgl_widget_set_enabled(ui->{field}, {param});"
     if key == "opacity":
         if prop.type not in ("f32", "f64"):
             raise EmitError(f"binding key opacity requires real property, got {prop.type!r}")

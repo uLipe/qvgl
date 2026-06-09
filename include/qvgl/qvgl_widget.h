@@ -12,6 +12,7 @@ extern "C" {
 
 void qvgl_widget_set_text(lv_obj_t * label, const char * text);
 void qvgl_widget_set_visible(lv_obj_t * obj, bool visible);
+void qvgl_widget_set_enabled(lv_obj_t * obj, bool enabled);
 void qvgl_widget_set_opa(lv_obj_t * obj, lv_opa_t opa);
 void qvgl_widget_set_opa_f32(lv_obj_t * obj, float opa);
 

@@ -51,7 +51,7 @@ types:
   Slider:
     extends: Item
     properties: [value, from, to, stepSize]
-    signals: [moved, pressed, released]
+    signals: [moved, valueChanged, pressed, released]
   Switch:
     extends: Item
     properties: [checked, text]

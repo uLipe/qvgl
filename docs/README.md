@@ -15,6 +15,7 @@ Read in order (top-down).
 | 9 | [09-roadmap.md](09-roadmap.md) | **Planned** next iterations (forward-looking only) |
 | 11 | [11-qml-conformance-matrix.md](11-qml-conformance-matrix.md) | Qt Quick / Ultralite ↔ QVGL ↔ LVGL compatibility |
 | 12 | [12-runtime-data-plane.md](12-runtime-data-plane.md) | **Passo 1–2 plan**, C runtime test suite (R1/R2), bindings outline |
+| 13 | [13-sprint-roadmap.md](13-sprint-roadmap.md) | **Active sprint** — Controls phases 1–8, status table |
 | — | [benchmarks.md](benchmarks.md) | MCU timing notes, animation policy, CI reference |
 
 ## Related files

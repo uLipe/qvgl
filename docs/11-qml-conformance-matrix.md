@@ -89,7 +89,7 @@ Each feature is scored at four layers:
 | Import | Profile | Sema | IR | Emit | Notes |
 |--------|---------|------|-----|------|-------|
 | `QtQuick` / `2.15` / `2.0` | ✅ | ✅ | ✅ | ✅ | Version optional (`import QtQuick`) |
-| `QtQuick.Controls` | ✅ | ✅ | ✅ | ✅ | Subset: `Label`, `ToolButton` |
+| `QtQuick.Controls` | ✅ | ✅ | ✅ | ✅ | `Label`, `ToolButton`, `Slider`, `Switch`, `CheckBox`, `Button`, `ComboBox` |
 | `QtQuick.Layouts` | ✅ | ✅ | ✅ | ✅ | `ColumnLayout`, `RowLayout` |
 | `QtQuick.Controls.Material` | ✅ | ✅ | ✅ | ✅ | `Material.*` → profile `theme.colors` at compile time |
 | Custom / app modules | ❌ | ❌ | — | — | Map into profile or trim |
@@ -110,6 +110,12 @@ Each feature is scored at four layers:
 | `Image` | ✅ | ✅ | ✅ | ✅ `lv_image` | `icon_row` | |
 | `MouseArea` | ✅ | ✅ | ✅ | ✅ clickable `lv_obj` | `mcu_minimal` | `pressed`/`released` 📋 |
 | `ToolButton` | ✅ | ✅ | ✅ | ✅ `lv_button` | `controls_card`, `line_plot_card` | `onClicked: app_on_*()` |
+| `Slider` | ✅ | ✅ | ✅ | ✅ `lv_slider` | `controls_inputs` | `value` binding, `onMoved` / `onValueChanged` |
+| `Switch` / `CheckBox` | ✅ | ✅ | ✅ | ✅ | `controls_inputs` | `checked` binding |
+| `Button` | ✅ | ✅ | ✅ | ✅ `lv_button` | `controls_inputs` | Material primary fill |
+| `ComboBox` | ✅ | ✅ | ✅ | ✅ `lv_dropdown` | `controls_inputs` | static `model: [...]` |
+| `RadioButton` / `GroupBox` | 📋 | 📋 | — | — | | Phase 4 P2 |
+| `ProgressBar` | 📋 | 📋 | — | — | | Phase 4 P2 |
 | `ColumnLayout` / `RowLayout` | ✅ | ✅ | ✅ | ✅ layout `lv_obj` | `controls_card`, `line_plot_card` | Flex after anchors |
 | `LinePlot` | ✅ | ✅ | ✅ | ✅ `lv_chart` SCATTER | `line_plot_card`, `test_line_plot_card.py` | Not in desktop Qt — use `*_qt.qml` for parity |
 | `PlotPoint` | ✅ | ✅ | ✅ | ✅ static series arrays | `line_plot_card` | Child of `LinePlot` only |
@@ -182,6 +188,10 @@ Each feature is scored at four layers:
 |---------|---------|------|-----|------|-------|
 | `MouseArea.onClicked` | ✅ | ✅ | ✅ | ✅ | |
 | `ToolButton.onClicked` | ✅ | ✅ | ✅ | ✅ | |
+| `Slider.onMoved` / `onValueChanged` | ✅ | ✅ | ✅ | ✅ | |
+| `Switch` / `CheckBox` `onClicked` | ✅ | ✅ | ✅ | ✅ | |
+| `onPressed` / `onReleased` (Controls) | ✅ | ✅ | ✅ | ✅ | `controls_styles` |
+| `enabled` / `opacity` bindings on Controls | ✅ | ✅ | ✅ | ✅ | `controls_styles`, L1 setters |
 | Handler `app_on_*()` | ✅ | ✅ | ✅ | ✅ | App implements C symbol |
 | Arbitrary handler names | ❌ | ❌ | — | — | Must be `app_on_*` |
 | `onPropertyChanged` | ❌ | ❌ | — | — | |
@@ -234,7 +244,7 @@ See [09-roadmap.md](09-roadmap.md). Summary:
 | Area | Gap |
 |------|-----|
 | Plot | ✅ `qvgl_ui_*_set_plot_points` / `set_plot_domain` (L2); preview `--plot-animate` |
-| Controls | `ScrollView`, `Button` styles, `StackView` |
+| Controls | `ScrollView`, `StackView`, `RadioButton`, `ProgressBar`, `TextField` |
 | Layout | `GridLayout`, baseline anchors |
 | Bindings | `int`/`bool`/`string` hybrid setters |
 | Input | `MouseArea` pressed/released |

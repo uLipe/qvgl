@@ -70,3 +70,12 @@ void test_widget_checked(void)
     qvgl_widget_set_checked(sw, false);
     QVGL_ASSERT(!lv_obj_has_state(sw, LV_STATE_CHECKED));
 }
+
+void test_widget_enabled(void)
+{
+    lv_obj_t * btn = lv_button_create(lv_screen_active());
+    qvgl_widget_set_enabled(btn, false);
+    QVGL_ASSERT(lv_obj_has_state(btn, LV_STATE_DISABLED));
+    qvgl_widget_set_enabled(btn, true);
+    QVGL_ASSERT(!lv_obj_has_state(btn, LV_STATE_DISABLED));
+}

@@ -15,7 +15,8 @@ Generic reference UIs — each has `*.qml`, optional `golden/*.qvglir.json`, and
 | [material_card](material_card/) | `Material.*` → profile `theme.colors` |
 | [warning_telltales](warning_telltales/) | bound `bool` → `Image.visible` |
 | [controls_card](controls_card/) | Controls + layouts |
-| [controls_inputs](controls_inputs/) | Slider, Switch, CheckBox + bound props |
+| [controls_inputs](controls_inputs/) | Slider, Switch, CheckBox, Button, ComboBox + bound props |
+| [controls_styles](controls_styles/) | enabled/opacity bindings + Material chrome + pressed/released |
 | [line_plot_card](line_plot_card/) | `LinePlot` + hover cursor |
 | [channel_plot_trim](channel_plot_trim/) | trim reference for MCU full-screen |
 

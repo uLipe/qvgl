@@ -17,6 +17,15 @@ void qvgl_widget_set_visible(lv_obj_t * obj, bool visible)
         lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
 }
 
+void qvgl_widget_set_enabled(lv_obj_t * obj, bool enabled)
+{
+    if(!obj) return;
+    if(enabled)
+        lv_obj_remove_state(obj, LV_STATE_DISABLED);
+    else
+        lv_obj_add_state(obj, LV_STATE_DISABLED);
+}
+
 void qvgl_widget_set_opa(lv_obj_t * obj, lv_opa_t opa)
 {
     if(!obj) return;

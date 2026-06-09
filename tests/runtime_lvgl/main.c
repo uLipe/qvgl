@@ -10,6 +10,7 @@ void test_widget_opa_f32(void);
 void test_widget_arc_value(void);
 void test_widget_slider_value(void);
 void test_widget_checked(void);
+void test_widget_enabled(void);
 void test_plot_set_points(void);
 void test_plot_set_domain_labels(void);
 void test_plot_set_cursor(void);
@@ -32,6 +33,7 @@ int main(void)
     QVGL_TEST_RUN(test_widget_arc_value);
     QVGL_TEST_RUN(test_widget_slider_value);
     QVGL_TEST_RUN(test_widget_checked);
+    QVGL_TEST_RUN(test_widget_enabled);
     QVGL_TEST_RUN(test_plot_set_points);
     QVGL_TEST_RUN(test_plot_set_domain_labels);
     QVGL_TEST_RUN(test_plot_set_cursor);

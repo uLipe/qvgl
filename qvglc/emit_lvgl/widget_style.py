@@ -4,6 +4,7 @@ from qvglc.emit_lvgl.colors import lv_color_hex_expr
 from qvglc.ir.model import Node
 from qvglc.layout import Rect
 from qvglc.profile import Profile
+from qvglc.theme import resolve_theme_member
 
 
 def lv_font_expr(profile: Profile, pixel_size: int) -> str:
@@ -43,8 +44,35 @@ def emit_opacity_visible(node: Node, var: str) -> list[str]:
 
 
 def emit_enabled(node: Node, var: str) -> list[str]:
-    if "enabled" in node.properties and not node.properties.get("enabled", True):
-        return [f"    lv_obj_clear_flag({var}, LV_OBJ_FLAG_CLICKABLE);"]
+    en = node.properties.get("enabled")
+    if "enabled" in node.properties and not _is_bound(en) and not en:
+        return [f"    lv_obj_add_state({var}, LV_STATE_DISABLED);"]
+    return []
+
+
+def emit_material_control_chrome(node: Node, var: str, profile: Profile) -> list[str]:
+    accent = lv_color_hex_expr(resolve_theme_member(profile, "accent"))
+    track = lv_color_hex_expr(resolve_theme_member(profile, "secondary"))
+    if node.kind == "Slider":
+        return [
+            f"    lv_obj_set_style_bg_color({var}, {track}, LV_PART_MAIN);",
+            f"    lv_obj_set_style_bg_color({var}, {accent}, LV_PART_INDICATOR);",
+            f"    lv_obj_set_style_radius({var}, 4, LV_PART_MAIN);",
+            f"    lv_obj_set_style_radius({var}, 4, LV_PART_INDICATOR);",
+            f"    lv_obj_set_style_pad_all({var}, 4, LV_PART_MAIN);",
+        ]
+    if node.kind == "Switch":
+        return [
+            f"    lv_obj_set_style_bg_color({var}, {track}, LV_PART_MAIN);",
+            f"    lv_obj_set_style_bg_color({var}, {accent}, LV_PART_INDICATOR);",
+        ]
+    if node.kind == "ComboBox":
+        return [
+            f"    lv_obj_set_style_border_width({var}, 1, 0);",
+            f"    lv_obj_set_style_border_color({var}, {track}, 0);",
+            f"    lv_obj_set_style_radius({var}, 4, 0);",
+            f"    lv_obj_set_style_pad_hor({var}, 8, 0);",
+        ]
     return []
 
 
