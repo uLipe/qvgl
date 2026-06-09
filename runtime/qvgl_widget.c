@@ -108,3 +108,21 @@ void qvgl_widget_set_slider_value(lv_obj_t * slider, float value, float vmin, fl
     if(v > mx) v = mx;
     lv_slider_set_value(slider, v, LV_ANIM_OFF);
 }
+
+void qvgl_widget_set_bar_value(lv_obj_t * bar, float value, float vmin, float vmax)
+{
+    if(!bar) return;
+    int32_t mn = lv_bar_get_min_value(bar);
+    int32_t mx = lv_bar_get_max_value(bar);
+    if(fabsf(vmax - vmin) < 1e-9f) {
+        lv_bar_set_value(bar, mn, LV_ANIM_OFF);
+        return;
+    }
+    float t = (value - vmin) / (vmax - vmin);
+    if(t < 0.0f) t = 0.0f;
+    if(t > 1.0f) t = 1.0f;
+    int32_t v = (int32_t)lroundf((float)mn + t * (float)(mx - mn));
+    if(v < mn) v = mn;
+    if(v > mx) v = mx;
+    lv_bar_set_value(bar, v, LV_ANIM_OFF);
+}

@@ -33,15 +33,39 @@ def cmake_build(tmp_path_factory) -> Path:
 
 def test_ctest_runtime_unit(cmake_build: Path):
     subprocess.run(
-        ["ctest", "--test-dir", str(cmake_build), "-R", "runtime_unit", "--output-on-failure"],
+        ["ctest", "--test-dir", str(cmake_build), "-R", "^runtime_unit$", "--output-on-failure"],
         check=True,
         cwd=ROOT,
     )
 
 
-def test_ctest_runtime_lvgl(cmake_build: Path):
+def test_ctest_runtime_lvgl_widget(cmake_build: Path):
     subprocess.run(
-        ["ctest", "--test-dir", str(cmake_build), "-R", "runtime_lvgl", "--output-on-failure"],
+        ["ctest", "--test-dir", str(cmake_build), "-R", "^runtime_lvgl_widget$", "--output-on-failure"],
+        check=True,
+        cwd=ROOT,
+    )
+
+
+def test_ctest_runtime_lvgl_controls(cmake_build: Path):
+    subprocess.run(
+        ["ctest", "--test-dir", str(cmake_build), "-R", "^runtime_lvgl_controls$", "--output-on-failure"],
+        check=True,
+        cwd=ROOT,
+    )
+
+
+def test_ctest_runtime_lvgl_plot(cmake_build: Path):
+    subprocess.run(
+        ["ctest", "--test-dir", str(cmake_build), "-R", "^runtime_lvgl_plot$", "--output-on-failure"],
+        check=True,
+        cwd=ROOT,
+    )
+
+
+def test_ctest_runtime_lvgl_bound(cmake_build: Path):
+    subprocess.run(
+        ["ctest", "--test-dir", str(cmake_build), "-R", "^runtime_lvgl_bound$", "--output-on-failure"],
         check=True,
         cwd=ROOT,
     )

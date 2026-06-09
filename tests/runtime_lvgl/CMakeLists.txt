@@ -24,21 +24,37 @@ add_custom_command(
     VERBATIM
 )
 
-add_executable(qvgl_runtime_lvgl_test
-    main.c
-    test_widget.c
-    test_controls.c
-    test_plot.c
+set(_R2_COMMON_INCLUDES
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/tests/harness
+    ${CMAKE_SOURCE_DIR}/tests/preview
+    "${QVGL_LVGL_PATH}"
+)
+
+function(_qvgl_add_r2_test name main_src extra_srcs)
+    add_executable(${name}
+        ${main_src}
+        ${extra_srcs}
+        ${CMAKE_SOURCE_DIR}/tests/preview/qvgl_preview_display.c
+    )
+    target_include_directories(${name} PRIVATE ${_R2_COMMON_INCLUDES})
+    target_link_libraries(${name} PRIVATE lvgl qvgl_runtime_lvgl qvgl_runtime m)
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
+_qvgl_add_r2_test(runtime_lvgl_widget main_widget.c test_widget.c)
+_qvgl_add_r2_test(runtime_lvgl_controls main_controls.c test_controls.c)
+_qvgl_add_r2_test(runtime_lvgl_plot main_plot.c test_plot.c)
+
+add_executable(runtime_lvgl_bound
+    main_bound.c
     test_bound_setters.c
     ${CMAKE_SOURCE_DIR}/tests/preview/qvgl_preview_display.c
     ${BOUND_UI_C}
 )
-target_include_directories(qvgl_runtime_lvgl_test PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/tests/harness
-    ${CMAKE_SOURCE_DIR}/tests/preview
+target_include_directories(runtime_lvgl_bound PRIVATE
+    ${_R2_COMMON_INCLUDES}
     ${BOUND_FIXTURE_DIR}
-    "${QVGL_LVGL_PATH}"
 )
-target_link_libraries(qvgl_runtime_lvgl_test PRIVATE lvgl qvgl_runtime_lvgl qvgl_runtime m)
-add_test(NAME runtime_lvgl COMMAND qvgl_runtime_lvgl_test)
+target_link_libraries(runtime_lvgl_bound PRIVATE lvgl qvgl_runtime_lvgl qvgl_runtime m)
+add_test(NAME runtime_lvgl_bound COMMAND runtime_lvgl_bound)

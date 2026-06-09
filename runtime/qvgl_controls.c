@@ -20,3 +20,8 @@ void qvgl_controls_set_dropdown_index(lv_obj_t * dropdown, int32_t index)
 {
     qvgl_widget_set_dropdown_selected(dropdown, index);
 }
+
+void qvgl_controls_set_progress_value(lv_obj_t * bar, float value, float vmin, float vmax)
+{
+    qvgl_widget_set_bar_value(bar, value, vmin, vmax);
+}

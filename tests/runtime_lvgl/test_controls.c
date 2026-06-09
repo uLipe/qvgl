@@ -34,3 +34,11 @@ void test_controls_set_dropdown_index(void)
     qvgl_controls_set_dropdown_index(dd, 2);
     QVGL_ASSERT(lv_dropdown_get_selected(dd) == 2);
 }
+
+void test_controls_set_progress_value(void)
+{
+    lv_obj_t * bar = lv_bar_create(lv_screen_active());
+    lv_bar_set_range(bar, 0, 100);
+    qvgl_controls_set_progress_value(bar, 0.75f, 0.0f, 1.0f);
+    QVGL_ASSERT(lv_bar_get_value(bar) == 75);
+}

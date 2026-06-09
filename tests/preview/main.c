@@ -76,6 +76,14 @@ void app_on_action_clicked(void)
 {
 }
 
+void app_on_eco_selected(void)
+{
+}
+
+void app_on_sport_selected(void)
+{
+}
+
 typedef struct {
     char name[64];
     char value[128];

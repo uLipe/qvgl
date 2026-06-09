@@ -23,9 +23,9 @@ Coverage incremental and deterministic: manifest → sema → emit → R1/R2 →
 | **1** | Responsividade (flex, `LinePlot` relayout) | ✅ Done; hybrid `Arc` responsive 🔮 optional |
 | **2** | Infra conformidade (`manifest.yaml`, emit markers, `qvglc coverage`) | ✅ Mostly done |
 | **3** | Material / Theme L1 | ✅ Done (`theme.py`, `material_card`, strict sema) |
-| **4** | Controls backlog (types) | ⚠️ P0/P1 done; **P2 backlog** |
-| **5** | Estados visuais e estilos | 🔄 **Active** |
-| **6** | Runtime L2 + data plane | 📋 Planned |
+| **4** | Controls backlog (types) | ✅ P0/P1/P2 done |
+| **5** | Estados visuais e estilos | ✅ Done |
+| **6** | Runtime L2 + data plane | ✅ Done |
 | **7** | Shell MCU + display profiles | 📋 Planned |
 | **8** | Paridade Ultralite (validação externa) | 📋 Planned |
 
@@ -65,8 +65,8 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 | P0 | `Switch` / `CheckBox` | `lv_switch` / `lv_checkbox` | ✅ |
 | P1 | `Button` | `lv_button` (filled) | ✅ |
 | P1 | `ComboBox` | `lv_dropdown` | ✅ static `model: [...]` |
-| P2 | `RadioButton` / `GroupBox` | composite | 📋 |
-| P2 | `ProgressBar` | `lv_bar` | 📋 |
+| P2 | `RadioButton` / `GroupBox` | composite | ✅ `controls_p2` |
+| P2 | `ProgressBar` | `lv_bar` | ✅ |
 | — | `TextField` | — | ❌ out of scope (keyboard) |
 
 **Phase 4 exit (P0/P1):** `controls_inputs` in manifest + P4 build.
@@ -87,12 +87,11 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 
 ---
 
-## Phase 6 — Runtime L2 (active)
+## Phase 6 — Runtime L2 ✅
 
 - ✅ `qvgl_controls.c` — thin L2 over L1; emit uses `qvgl_controls_*` for bound props
 - ✅ Plot: `qvgl_plot_enable_secondary_series`, `qvgl_plot_set_secondary_points`, `qvgl_plot_set_legend`
-- ✅ R2: `test_controls.c`, `test_plot_secondary_series`
-- R1/R2 per L2 module; CI split (ongoing)
+- ✅ R2 split: `runtime_lvgl_widget`, `runtime_lvgl_controls`, `runtime_lvgl_plot`, `runtime_lvgl_bound`
 
 ---
 

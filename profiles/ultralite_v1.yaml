@@ -68,6 +68,18 @@ types:
     extends: Item
     properties: [model, currentIndex, font.pixelSize]
     signals: [activated, pressed, released]
+  ProgressBar:
+    extends: Item
+    properties: [value, from, to]
+    signals: []
+  RadioButton:
+    extends: Item
+    properties: [checked, text, color, font.pixelSize]
+    signals: [clicked, pressed, released]
+  GroupBox:
+    extends: Item
+    properties: [title, color, font.pixelSize]
+    signals: []
   LinePlot:
     extends: Item
     properties: [lineColor, plotBg, gridColor, axisColor, labelColor, unitMutedColor, gridDiv, xMin, xMax, yMin, yMax, padL, padR, padT, padB, xUnit, yUnit, hoverEnabled]

@@ -73,6 +73,13 @@ def emit_material_control_chrome(node: Node, var: str, profile: Profile) -> list
             f"    lv_obj_set_style_radius({var}, 4, 0);",
             f"    lv_obj_set_style_pad_hor({var}, 8, 0);",
         ]
+    if node.kind == "ProgressBar":
+        return [
+            f"    lv_obj_set_style_bg_color({var}, {track}, LV_PART_MAIN);",
+            f"    lv_obj_set_style_bg_color({var}, {accent}, LV_PART_INDICATOR);",
+            f"    lv_obj_set_style_radius({var}, 4, LV_PART_MAIN);",
+            f"    lv_obj_set_style_radius({var}, 4, LV_PART_INDICATOR);",
+        ]
     return []
 
 

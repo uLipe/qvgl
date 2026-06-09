@@ -56,6 +56,13 @@ controls_inputs:
   - qvgl_controls_set_checked
   - qvgl_controls_set_dropdown_index
 
+controls_p2:
+  - lv_bar_create
+  - lv_obj_set_radio_button
+  - qvgl_controls_p2_set_loadLevel
+  - qvgl_controls_set_progress_value
+  - qvgl_controls_set_checked
+
 controls_styles:
   - LV_STATE_DISABLED
   - LV_PART_INDICATOR

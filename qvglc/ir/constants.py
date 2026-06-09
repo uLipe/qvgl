@@ -21,6 +21,9 @@ NODE_KIND = {
     "CheckBox": 14,
     "Button": 15,
     "ComboBox": 16,
+    "ProgressBar": 17,
+    "RadioButton": 18,
+    "GroupBox": 19,
 }
 
 NODE_KIND_NAME = {v: k for k, v in NODE_KIND.items()}

@@ -22,6 +22,7 @@ void qvgl_widget_set_arc_value(lv_obj_t * arc, float value, float vmin, float vm
 
 void qvgl_widget_set_checked(lv_obj_t * obj, bool checked);
 void qvgl_widget_set_slider_value(lv_obj_t * slider, float value, float vmin, float vmax);
+void qvgl_widget_set_bar_value(lv_obj_t * bar, float value, float vmin, float vmax);
 void qvgl_widget_set_dropdown_selected(lv_obj_t * dropdown, int32_t index);
 
 #ifdef __cplusplus

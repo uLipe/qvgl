@@ -249,8 +249,12 @@ def _intrinsic_size(node: Node) -> tuple[int, int]:
         return (max(w, 200), max(h, 40))
     if node.kind == "Slider" and (w <= 0 or h <= 0):
         return (max(w, 200), max(h, 40))
-    if node.kind in ("Switch", "CheckBox") and (w <= 0 or h <= 0):
+    if node.kind in ("Switch", "CheckBox", "RadioButton") and (w <= 0 or h <= 0):
         return (max(w, 52), max(h, 32))
+    if node.kind == "ProgressBar" and (w <= 0 or h <= 0):
+        return (max(w, 200), max(h, 16))
+    if node.kind == "GroupBox" and (w <= 0 or h <= 0):
+        return (max(w, 200), max(h, 120))
     return (w, h)
 
 

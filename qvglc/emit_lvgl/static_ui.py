@@ -47,6 +47,12 @@ from .combo import (
     combo_options_c_literal,
     emit_combo_create,
 )
+from .progress_bar import (
+    ProgressBarEmitPlan,
+    emit_progress_bar_create,
+    plan_progress_bar,
+    progress_initial,
+)
 from .slider import (
     SliderEmitPlan,
     emit_slider_create,
@@ -117,7 +123,7 @@ _SIGNAL_EVENT = {
 _SLIDER_HANDLER_SIGNALS = frozenset({"moved", "valueChanged", "pressed", "released"})
 _INTERACTION_HANDLER_SIGNALS = frozenset({"clicked", "pressed", "released"})
 _COMBO_HANDLER_SIGNALS = frozenset({"activated", "pressed", "released"})
-_CONTROL_CHROME_KINDS = frozenset({"Slider", "Switch", "CheckBox", "ComboBox"})
+_CONTROL_CHROME_KINDS = frozenset({"Slider", "Switch", "CheckBox", "ComboBox", "ProgressBar"})
 
 
 def _handler_cb_name(mod: Module, field: str, signal: str) -> str:
@@ -216,6 +222,7 @@ def emit_static(
     responsive = module_uses_responsive_layout(mod)
     plot_plans: list[tuple[str, object]] = []
     slider_plans: dict[int, SliderEmitPlan] = {}
+    progress_plans: dict[int, ProgressBarEmitPlan] = {}
 
     fields: list[str] = []
     create: list[str] = []
@@ -251,6 +258,8 @@ def emit_static(
             continue
         if node.kind == "Slider":
             slider_plans[idx] = plan_slider(node, slider_initial(node, mod, consumers))
+        if node.kind == "ProgressBar":
+            progress_plans[idx] = plan_progress_bar(node, progress_initial(node, mod, consumers))
 
     for idx, node in enumerate(mod.nodes):
         if idx == mod.root:
@@ -276,6 +285,7 @@ def emit_static(
                 hover_plan,
                 responsive,
                 slider_plans,
+                progress_plans,
                 mod.handlers,
             )
         )
@@ -302,7 +312,7 @@ def emit_static(
     for prop in bound_props:
         setter_decls.append(setter_decl(mod, prop))
         setter_fns.append(
-            emit_setter_body(mod, prop, consumers[prop.name], names, {}, slider_plans)
+            emit_setter_body(mod, prop, consumers[prop.name], names, {}, slider_plans, progress_plans)
         )
         init_setters.append(f"    qvgl_{mod.module}_set_{prop.name}(ui, ui->{prop.name});")
 
@@ -478,6 +488,7 @@ def _emit_node(
     hover_plan,
     responsive: bool,
     slider_plans: dict[int, SliderEmitPlan],
+    progress_plans: dict[int, ProgressBarEmitPlan],
     handlers: list,
 ) -> list[str]:
     r = lay.rect
@@ -735,6 +746,72 @@ def _emit_node(
         )
         pressed_released = frozenset({"pressed", "released"})
         _append_signal_handlers(lines, mod, field, node, handlers, pressed_released)
+        return _with_style(node, field, lines, profile)
+
+    if node.kind == "ProgressBar":
+        plan = progress_plans[idx]
+        if responsive and parent_node.kind == "ColumnLayout":
+            geom = [
+                f"    lv_obj_set_width(ui->{field}, LV_PCT(100));",
+                f"    lv_obj_set_height(ui->{field}, {max(r.h, 16)});",
+            ]
+        else:
+            geom = emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y)
+        bar_lines = emit_progress_bar_create(field, parent, plan, geom)
+        return _with_style(node, field, bar_lines, profile)
+
+    if node.kind == "RadioButton":
+        label = _text_literal(node, mod)
+        checked = bool(node.properties.get("checked", False))
+        if isinstance(node.properties.get("checked"), dict):
+            checked = False
+        color = node.properties.get("color", "#ffffffff")
+        px = int(node.properties.get("font.pixelSize", 14))
+        lines = [
+            f"    ui->{field} = lv_checkbox_create({parent});",
+            *emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
+            f'    lv_checkbox_set_text(ui->{field}, "{label}");',
+            f"    lv_obj_set_style_text_color(ui->{field}, {lv_color_hex_expr(str(color))}, 0);",
+            f"    lv_obj_set_style_text_font(ui->{field}, {lv_font_expr(profile, px)}, 0);",
+            f"    lv_obj_set_radio_button(ui->{field}, true);",
+        ]
+        if checked:
+            lines.append(f"    lv_obj_add_state(ui->{field}, LV_STATE_CHECKED);")
+        _append_signal_handlers(lines, mod, field, node, handlers, _INTERACTION_HANDLER_SIGNALS)
+        return _with_style(node, field, lines, profile)
+
+    if node.kind == "GroupBox":
+        title = str(node.properties.get("title", ""))
+        px = int(node.properties.get("font.pixelSize", 12))
+        border = lv_color_hex_expr(resolve_theme_member(profile, "secondary"))
+        bg = lv_color_hex_expr(resolve_theme_member(profile, "surface"))
+        fg = node.properties.get("color")
+        title_color = lv_color_hex_expr(str(fg)) if fg else lv_color_hex_expr(
+            resolve_theme_member(profile, "foreground")
+        )
+        escaped_title = title.replace("\\", "\\\\").replace('"', '\\"')
+        lines = [
+            f"    ui->{field} = lv_obj_create({parent});",
+            f"    lv_obj_remove_style_all(ui->{field});",
+            *emit_widget_geometry(field, parent_node, responsive, r.w, r.h, rel_x, rel_y),
+            f"    lv_obj_set_style_bg_color(ui->{field}, {bg}, 0);",
+            f"    lv_obj_set_style_bg_opa(ui->{field}, LV_OPA_COVER, 0);",
+            f"    lv_obj_set_style_border_width(ui->{field}, 1, 0);",
+            f"    lv_obj_set_style_border_color(ui->{field}, {border}, 0);",
+            f"    lv_obj_set_style_radius(ui->{field}, 4, 0);",
+            f"    lv_obj_set_style_pad_all(ui->{field}, 10, 0);",
+            f"    lv_obj_clear_flag(ui->{field}, LV_OBJ_FLAG_SCROLLABLE);",
+        ]
+        if title:
+            lines += [
+                f"    {{",
+                f"        lv_obj_t * gb_title = lv_label_create(ui->{field});",
+                f'        lv_label_set_text(gb_title, "{escaped_title}");',
+                f"        lv_obj_set_style_text_color(gb_title, {title_color}, 0);",
+                f"        lv_obj_set_style_text_font(gb_title, {lv_font_expr(profile, px)}, 0);",
+                f"        lv_obj_set_pos(gb_title, 8, -6);",
+                f"    }}",
+            ]
         return _with_style(node, field, lines, profile)
 
     raise EmitError(f"static emit unsupported node kind: {node.kind}")

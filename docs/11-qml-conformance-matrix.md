@@ -114,8 +114,8 @@ Each feature is scored at four layers:
 | `Switch` / `CheckBox` | ✅ | ✅ | ✅ | ✅ | `controls_inputs` | `checked` binding |
 | `Button` | ✅ | ✅ | ✅ | ✅ `lv_button` | `controls_inputs` | Material primary fill |
 | `ComboBox` | ✅ | ✅ | ✅ | ✅ `lv_dropdown` | `controls_inputs` | static `model: [...]` |
-| `RadioButton` / `GroupBox` | 📋 | 📋 | — | — | | Phase 4 P2 |
-| `ProgressBar` | 📋 | 📋 | — | — | | Phase 4 P2 |
+| `RadioButton` / `GroupBox` | ✅ | ✅ | ✅ | ✅ composite | `controls_p2` | Radio via `lv_obj_set_radio_button` |
+| `ProgressBar` | ✅ | ✅ | ✅ | ✅ `lv_bar` | `controls_p2` | `value` binding |
 | `ColumnLayout` / `RowLayout` | ✅ | ✅ | ✅ | ✅ layout `lv_obj` | `controls_card`, `line_plot_card` | Flex after anchors |
 | `LinePlot` | ✅ | ✅ | ✅ | ✅ `lv_chart` SCATTER | `line_plot_card`, `test_line_plot_card.py` | Not in desktop Qt — use `*_qt.qml` for parity |
 | `PlotPoint` | ✅ | ✅ | ✅ | ✅ static series arrays | `line_plot_card` | Child of `LinePlot` only |
