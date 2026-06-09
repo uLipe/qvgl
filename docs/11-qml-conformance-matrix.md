@@ -241,17 +241,19 @@ Each feature is scored at four layers:
 
 ## Remaining gaps (highest impact)
 
-See [09-roadmap.md](09-roadmap.md). Summary:
+See [14-qt-for-mcu-parity-sprint.md](14-qt-for-mcu-parity-sprint.md) and [09-roadmap.md](09-roadmap.md).
 
-| Area | Gap |
-|------|-----|
-| Plot | ✅ `qvgl_ui_*_set_plot_points` / `set_plot_domain` (L2); preview `--plot-animate` |
-| Controls | `ScrollView`, `StackView`, `RadioButton`, `ProgressBar`, `TextField` |
-| Layout | `GridLayout`, baseline anchors |
-| Bindings | `int`/`bool`/`string` hybrid setters |
-| Input | `MouseArea` pressed/released |
-| Typography | `font.weight`, custom fonts |
-| Image | `PreserveAspectCrop` |
+| Area | Status |
+|------|--------|
+| Plot L2 + MCU loop | ✅ `apply_plot_series`, `channel_plot_trim` on P4 |
+| Controls P0–P2 | ✅ Slider…ProgressBar, RadioButton, GroupBox |
+| Controls nav | ❌ `ScrollView`, `StackView`, `TextField` |
+| Studio `Gauge.qml` / `ArcItem` | ⚠️ Use `turbo_gauge` derivative; upstream reference only |
+| Layout | ❌ `GridLayout`, baseline anchors; ⚠️ `horizontalAlignment` emit |
+| Bindings | ⚠️ `real`/`bool`/`string` via setters; ❌ `==` / `property var` |
+| Upstream pass | ⚠️ Only `minimal.qml` compiles as-is; cluster needs trim |
+| Typography | ❌ `font.weight`, custom TTF |
+| Image | ⚠️ `PreserveAspectCrop` |
 
 ---
 

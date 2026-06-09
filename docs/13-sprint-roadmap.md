@@ -118,4 +118,4 @@ Each type = profile + sema + IR + emit + L1 setter + example + pytest + emit mar
 2. Phase 4 P0/P1 ✅ → **Phase 5** → Phase 4 P2 when needed
 3. Phase 6–8 in parallel with product needs
 
-**Do not** jump to Passo 3 MCU plot loop or upstream vehicle work while Controls sprint phases 4–5 are open unless the user explicitly pivots.
+**Controls sprint complete.** Next: [14-qt-for-mcu-parity-sprint.md](14-qt-for-mcu-parity-sprint.md) (Qt for MCUs trim & upstream parity).
