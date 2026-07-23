@@ -23,27 +23,23 @@ jobs:
           python-version: "3.12"
 
       - name: Install deps
-        working-directory: qvgl
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential libsdl2-dev
           pip install -e ".[test]"
 
       - name: Proof of correctness
-        working-directory: qvgl
         run: python qvglc/cli.py proof
 
       - name: Pytest
-        working-directory: qvgl
         env:
           SDL_VIDEODRIVER: dummy
         run: pytest tests/python -q
 
       - name: C runtime (R1/R2)
-        working-directory: qvgl
         env:
           SDL_VIDEODRIVER: dummy
         run: |
-          cmake -B build-ci -S . -DQVGL_LVGL_PATH=../lvgl -DQVGL_BUILD_PREVIEW=OFF
+          cmake -B build-ci -S . -DQVGL_LVGL_PATH=lvgl -DQVGL_BUILD_PREVIEW=OFF
           cmake --build build-ci -j"$(nproc)"
           ctest --test-dir build-ci -R 'runtime_' --output-on-failure
