@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -7,6 +8,29 @@ from pathlib import Path
 
 class LvglProbeError(Exception):
     pass
+
+
+def resolve_lvgl_path(
+    explicit: Path | str | None = None,
+    *,
+    cwd: Path | None = None,
+) -> Path:
+    """Locate the LVGL tree without breaking monorepo or standalone layouts.
+
+    Order: explicit arg → ``QVGL_LVGL_PATH`` → ``<cwd>/lvgl`` (CI/standalone)
+    → ``<cwd>/../lvgl`` (esp-idf-exps monorepo). Falls back to ``../lvgl`` so
+    existing docs and Qt Creator → MCU workflows keep the same relative path.
+    """
+    if explicit is not None:
+        return Path(explicit).expanduser()
+    env = os.environ.get("QVGL_LVGL_PATH")
+    if env:
+        return Path(env).expanduser()
+    base = (cwd or Path.cwd()).resolve()
+    for candidate in (base / "lvgl", base.parent / "lvgl"):
+        if candidate.is_dir():
+            return candidate
+    return base.parent / "lvgl"
 
 
 @dataclass

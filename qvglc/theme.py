@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from qvglc.profile.load import Profile
 
-from qvglc.parser.errors import DiagnosticCode, QvglDiagnostic
-
 
 def normalize_color(s: str) -> str:
     if not isinstance(s, str) or not s.startswith("#"):
@@ -39,6 +37,8 @@ def check_theme_member(
     line: int = 0,
     column: int = 0,
 ) -> None:
+    from qvglc.parser.errors import DiagnosticCode, QvglDiagnostic
+
     if member in profile.theme_colors:
         return
     raise QvglDiagnostic(

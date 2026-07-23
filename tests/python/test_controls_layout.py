@@ -55,11 +55,17 @@ def test_controls_card_emits_toolbutton(controls_mod, tmp_path, caps):
 
 
 def test_channel_plot_card_rejects_function(profile):
-    qml = (ROOT.parent / "ChannelPlotCard.qml").read_text(encoding="utf-8")
+    # Prefer monorepo sibling when present; otherwise in-repo reject fixture.
+    candidates = [
+        ROOT.parent / "ChannelPlotCard.qml",
+        ROOT / "tests/fixtures/qml/reject/function_decl.qml",
+    ]
+    qml_path = next((p for p in candidates if p.is_file()), None)
+    assert qml_path is not None
     from qvglc.parser import QvglDiagnostic, check_qml
 
     with pytest.raises(QvglDiagnostic) as exc:
-        check_qml(qml, profile)
+        check_qml(qml_path, profile)
     assert exc.value.code.value in (
         "unsupported_feature",
         "unsupported_expr",

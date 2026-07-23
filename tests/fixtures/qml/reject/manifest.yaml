@@ -17,3 +17,5 @@ cases:
     code: unsupported_feature
   - file: connections.qml
     code: unsupported_feature
+  - file: function_decl.qml
+    code: unsupported_feature

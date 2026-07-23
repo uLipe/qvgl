@@ -67,12 +67,12 @@ def run_qml_preview(
     exit_after: bool = False,
 ) -> int:
     from qvglc.emit_lvgl import emit_module
-    from qvglc.lvgl_probe import probe_lvgl
+    from qvglc.lvgl_probe import probe_lvgl, resolve_lvgl_path
     from qvglc.parser import compile_qml, default_profile_path, load_profile
 
     root = _repo_root()
     build_dir = (build_dir or root / "build").resolve()
-    lvgl_path = (lvgl_path or root.parent / "lvgl").resolve()
+    lvgl_path = resolve_lvgl_path(lvgl_path, cwd=root).resolve()
     qml_path = qml_path.resolve()
     gen_dir = build_dir / "run" / qml_path.stem
 

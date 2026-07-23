@@ -21,7 +21,7 @@ from qvglc.ir import (
     module_to_dict,
     validate,
 )
-from qvglc.lvgl_probe import probe_lvgl
+from qvglc.lvgl_probe import probe_lvgl, resolve_lvgl_path
 from qvglc.run_preview import run_qml_preview
 
 
@@ -52,14 +52,19 @@ def main(argv: list[str] | None = None) -> int:
     p_emit.add_argument(
         "--lvgl-path",
         type=Path,
-        default=Path("../lvgl"),
-        help="LVGL source tree for capability probe",
+        default=None,
+        help="LVGL source tree for capability probe (default: ./lvgl or ../lvgl)",
     )
 
     p_compile = sub.add_parser("compile", help="QML or IR to generated LVGL C")
     p_compile.add_argument("input", type=Path, help="Input .qml, .qvglir, or .qvglir.json")
     p_compile.add_argument("-o", "--output", type=Path, required=True, help="Output directory")
-    p_compile.add_argument("--lvgl-path", type=Path, default=Path("../lvgl"))
+    p_compile.add_argument(
+        "--lvgl-path",
+        type=Path,
+        default=None,
+        help="LVGL source tree (default: ./lvgl or ../lvgl)",
+    )
     p_compile.add_argument("--profile", type=Path, default=None)
     p_compile.add_argument("--display-width", type=int, default=None, help="Override profile display width")
     p_compile.add_argument("--display-height", type=int, default=None, help="Override profile display height")
@@ -121,7 +126,12 @@ def main(argv: list[str] | None = None) -> int:
     p_run = sub.add_parser("run", help="Compile QML and open SDL preview (one-shot E2E)")
     p_run.add_argument("input", type=Path, help="Input .qml")
     p_run.add_argument("--build-dir", type=Path, default=Path("build"))
-    p_run.add_argument("--lvgl-path", type=Path, default=Path("../lvgl"))
+    p_run.add_argument(
+        "--lvgl-path",
+        type=Path,
+        default=None,
+        help="LVGL source tree (default: ./lvgl or ../lvgl)",
+    )
     p_run.add_argument("--headless", action="store_true")
     p_run.add_argument("--pressure", type=float, default=None, help="legacy alias for --set pressure=")
     p_run.add_argument("--set", action="append", default=[], metavar="NAME=FLOAT")
@@ -156,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "emit":
             mod = _load_module(args.input)
             validate(mod)
-            caps = probe_lvgl(args.lvgl_path)
+            caps = probe_lvgl(resolve_lvgl_path(args.lvgl_path))
             paths = emit_module(mod, caps, args.output)
             for p in paths:
                 print(p)
@@ -175,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.ir_out:
                 args.ir_out.parent.mkdir(parents=True, exist_ok=True)
                 args.ir_out.write_bytes(encode_module(mod))
-            caps = probe_lvgl(args.lvgl_path)
+            caps = probe_lvgl(resolve_lvgl_path(args.lvgl_path))
             asset_root = args.input.parent if args.input.suffix == ".qml" else None
             paths = emit_module(mod, caps, args.output, asset_root=asset_root)
             for p in paths:
